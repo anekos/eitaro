@@ -2,6 +2,8 @@
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
 extern crate encoding;
+extern crate nickel;
+extern crate percent_encoding;
 extern crate rusty_leveldb;
 
 use std::env;
@@ -16,11 +18,11 @@ use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
-mod loader;
 mod dictionary;
+mod http;
+mod loader;
 
 use loader::Loader;
-use dictionary::Dictionary;
 
 
 
@@ -49,16 +51,6 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
     Ok(())
 }
 
-fn load_dictionary<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), Box<Error>> {
-    let mut dic = Dictionary::new(dictionary_path)?;
-    if let Some(found) = dic.get("cat") {
-        println!("{}", found?);
-    } else {
-        eprintln!("Not found");
-    }
-    Ok(())
-}
-
 fn _main() -> Result<(), Box<Error>> {
     let mut args = env::args();
     args.next().unwrap();
@@ -66,9 +58,8 @@ fn _main() -> Result<(), Box<Error>> {
     if let Some(ref source_path) = args.next() {
         build_dictionary(source_path, &dictionary_path)
     } else {
-        load_dictionary(&dictionary_path)
+        http::main(&dictionary_path)
     }
-
 }
 
 fn main() {

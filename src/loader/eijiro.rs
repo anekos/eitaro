@@ -15,16 +15,13 @@ impl Loader for EijiroLoader {
     fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, Box<Error>> {
         let mut result = Dictionary::new(dictionary_path)?;
 
-        let lines: Vec<&str> = source.lines().collect();
-        for chunk in lines.chunks(10000) {
-            result.writes(move |writer| {
-                for line in chunk {
-                    if line.starts_with("■") {
-                        load_line(writer, &line[3..]);
-                    }
+        result.writes(move |writer| {
+            for line in source.lines() {
+                if line.starts_with("■") {
+                    load_line(writer, &line[3..]);
                 }
-            })?;
-        }
+            }
+        })?;
 
         Ok(result)
     }
