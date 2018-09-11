@@ -1,5 +1,6 @@
 
 use std::error::Error;
+use std::path::Path;
 
 use dictionary::{Dictionary, DictionaryWriter};
 use loader::Loader;
@@ -11,8 +12,8 @@ pub struct EijiroLoader();
 
 
 impl Loader for EijiroLoader {
-    fn load(&self, source: &str) -> Result<Dictionary, Box<Error>> {
-        let mut result = Dictionary::new()?;
+    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, Box<Error>> {
+        let mut result = Dictionary::new(dictionary_path)?;
 
         let lines: Vec<&str> = source.lines().collect();
         for chunk in lines.chunks(10000) {

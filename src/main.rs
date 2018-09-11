@@ -1,14 +1,17 @@
 
 #[macro_use] extern crate if_let_return;
+extern crate app_dirs;
 extern crate encoding;
 extern crate rusty_leveldb;
 
 use std::env;
 use std::error::Error;
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
+use app_dirs::{AppInfo, AppDataType};
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
@@ -17,10 +20,22 @@ mod loader;
 mod dictionary;
 
 use loader::Loader;
+use dictionary::Dictionary;
 
 
 
-fn build_dictionary(source_path: &str) -> Result<(), Box<Error>> {
+const APP_INFO: AppInfo = AppInfo { name: "eitaro", author: "anekos" };
+
+
+fn get_dictionary_path() -> Result<PathBuf, Box<Error>> {
+    let result = app_dirs::get_app_dir(AppDataType::UserCache, &APP_INFO, "dictionary")?;
+    if !result.exists() {
+        create_dir_all(&result).unwrap();
+    }
+    Ok(result)
+}
+
+fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_path: &U) -> Result<(), Box<Error>> {
     eprintln!("Building...");
     let mut buffer = vec![];
     let mut file = File::open(source_path)?;
@@ -30,23 +45,28 @@ fn build_dictionary(source_path: &str) -> Result<(), Box<Error>> {
     let decoded = WINDOWS_31J.decode(&buffer, Replace)?;
     eprintln!("Loading...");
     let ldr = loader::eijiro::EijiroLoader::default();
-    let _ = ldr.load(&decoded);
+    let _ = ldr.load(&decoded, dictionary_path);
     Ok(())
 }
 
-
-fn load_dictionary(_dictionary_path: &str) -> Result<(), Box<Error>> {
+fn load_dictionary<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), Box<Error>> {
+    let mut dic = Dictionary::new(dictionary_path)?;
+    if let Some(found) = dic.get("cat") {
+        println!("{}", found?);
+    } else {
+        eprintln!("Not found");
+    }
     Ok(())
 }
-
 
 fn _main() -> Result<(), Box<Error>> {
     let mut args = env::args();
     args.next().unwrap();
+    let dictionary_path = get_dictionary_path()?;
     if let Some(ref source_path) = args.next() {
-        build_dictionary(source_path)
+        build_dictionary(source_path, &dictionary_path)
     } else {
-        load_dictionary("eitaro.dic")
+        load_dictionary(&dictionary_path)
     }
 
 }

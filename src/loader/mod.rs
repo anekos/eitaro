@@ -1,5 +1,6 @@
 
 use std::error::Error;
+use std::path::Path;
 
 use dictionary::Dictionary;
 
@@ -8,5 +9,5 @@ pub mod eijiro;
 
 
 pub trait Loader {
-    fn load(&self, source: &str) -> Result<Dictionary, Box<Error>>;
+    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, Box<Error>>;
 }
