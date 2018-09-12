@@ -1,13 +1,12 @@
 
+#[macro_use] extern crate clap;
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
 extern crate encoding;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
-extern crate rusty_leveldb;
 
-use std::env;
 use std::error::Error;
 use std::fs::{create_dir_all, File};
 use std::io::Read;
@@ -15,6 +14,7 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use app_dirs::{AppInfo, AppDataType};
+use clap::{Arg, SubCommand};
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
@@ -24,6 +24,7 @@ mod loader;
 mod store;
 
 use loader::Loader;
+use store::Dictionary;
 
 
 
@@ -52,14 +53,45 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
     Ok(())
 }
 
+fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), Box<Error>> {
+    let mut dic = Dictionary::new(dictionary_path);
+    println!("{}", dic.get(word.to_owned()).unwrap());
+    Ok(())
+}
+
 fn _main() -> Result<(), Box<Error>> {
-    let mut args = env::args();
-    args.next().unwrap();
+    let app = app_from_crate!()
+        .subcommand(SubCommand::with_name("lookup")
+                    .about("Lookup")
+                    .arg(Arg::with_name("word")
+                         .help("Word")
+                         .required(true)))
+        .subcommand(SubCommand::with_name("build")
+                    .about("Build dictionary")
+                    .arg(Arg::with_name("dictionary-path")
+                         .help("Dictionary file path")
+                         .required(true)))
+        .subcommand(SubCommand::with_name("server")
+                    .about("HTTP Server")
+                    .arg(Arg::with_name("bind-to")
+                         .help("host:port to listen")
+                         .required(false)));
+
+    let matches = app.get_matches();
+
     let dictionary_path = get_dictionary_path()?;
-    if let Some(ref source_path) = args.next() {
-        build_dictionary(source_path, &dictionary_path)
+
+    if let Some(ref matches) = matches.subcommand_matches("build") {
+        let source_path = matches.value_of("dictionary-path").unwrap(); // Required
+        build_dictionary(&source_path, &dictionary_path)
+    } else if let Some(ref matches) = matches.subcommand_matches("server") {
+        let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:6767");
+        http::main(&dictionary_path, bind_to)
+    } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
+        let word = matches.value_of("word").unwrap(); // Required
+        lookup(&dictionary_path, word)
     } else {
-        http::main(&dictionary_path)
+        panic!("WTF!");
     }
 }
 

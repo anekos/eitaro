@@ -8,12 +8,12 @@ use percent_encoding::{percent_decode};
 
 
 
-pub fn main<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), Box<Error>> {
+pub fn main<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str) -> Result<(), Box<Error>> {
     let path: PathBuf = dictionary_path.as_ref().to_path_buf();
     let mut server = Nickel::with_data(path);
 
     server.get("/word/:word", on_get_word);
-    server.listen("127.0.0.1:6768")?;
+    server.listen(bind_to)?;
     Ok(())
 }
 
