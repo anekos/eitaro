@@ -52,6 +52,7 @@ impl Dictionary {
     }
 
     pub fn get(&mut self, word: String) -> Result<String, AppError> {
+        let word = word.to_lowercase();
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.read()?;
         let bucket = store.bucket::<String, String>(Some(BUCKET_NAME))?;
@@ -88,15 +89,17 @@ impl<'a> DictionaryWriter<'a> {
 
 impl MergeBuffer {
     fn insert(&mut self, key: &str, value: &str) -> Option<(String, Vec<String>)> {
+        let key = key.to_lowercase();
+
         if let Some(buffered) = self.buffered.as_ref() {
-            if buffered == key {
+            if buffered == &*key {
                 self.entries.push(value.to_owned());
                 return None;
             }
         }
 
         let result = self.flush();
-        self.buffered = Some(key.to_owned());
+        self.buffered = Some(key);
         self.entries.push(value.to_owned());
         result
     }
