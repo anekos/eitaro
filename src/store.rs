@@ -2,7 +2,9 @@
 use std::mem::swap;
 use std::path::Path;
 
-use kv::{Bucket, Config, Error, Manager, Txn};
+use kv::{Bucket, Config, Manager, Txn};
+
+use errors::AppError;
 
 
 
@@ -36,26 +38,26 @@ impl Dictionary {
         Dictionary { manager, config }
     }
 
-    pub fn writes<F>(&mut self, mut f: F) -> Result<(), Error> where F: FnMut(&mut DictionaryWriter) {
+    pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.write()?;
         let bucket = store.bucket::<String, String>(Some(BUCKET_NAME))?;
         let transaction = store.write_txn()?;
 
         let mut writer = DictionaryWriter::new(bucket, transaction);
-        f(&mut writer);
+        f(&mut writer)?;
         writer.complete()?;
 
         Ok(())
     }
 
-    pub fn get(&mut self, word: String) -> Result<String, Error> {
+    pub fn get(&mut self, word: String) -> Result<String, AppError> {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.read()?;
         let bucket = store.bucket::<String, String>(Some(BUCKET_NAME))?;
         let transaction = store.read_txn()?;
 
-        transaction.get(&bucket, word)
+        Ok(transaction.get(&bucket, word)?)
     }
 }
 
@@ -68,14 +70,14 @@ impl<'a> DictionaryWriter<'a> {
         }
     }
 
-    pub fn insert(&mut self, key: &str, value: &str) -> Result<(), Error> {
+    pub fn insert(&mut self, key: &str, value: &str) -> Result<(), AppError> {
         if let Some((key, values)) = self.merge_buffer.insert(key, value) {
             self.transaction.set(&self.bucket, key.to_owned(), values.join("\n"))?;
         }
         Ok(())
     }
 
-    fn complete(mut self) -> Result<(), Error> {
+    fn complete(mut self) -> Result<(), AppError> {
         if let Some((key, values)) = self.merge_buffer.flush() {
             self.transaction.set(&self.bucket, key, values.join("\n"))?;
         }

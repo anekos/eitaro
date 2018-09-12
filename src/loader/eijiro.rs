@@ -1,9 +1,9 @@
 
-use std::error::Error;
 use std::path::Path;
 
-use store::{Dictionary, DictionaryWriter};
+use errors::AppError;
 use loader::Loader;
+use store::{Dictionary, DictionaryWriter};
 
 
 
@@ -12,24 +12,25 @@ pub struct EijiroLoader();
 
 
 impl Loader for EijiroLoader {
-    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, Box<Error>> {
+    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, AppError> {
         let mut result = Dictionary::new(dictionary_path);
 
         result.writes(move |writer| {
             for line in source.lines() {
                 if line.starts_with("■") {
-                    load_line(writer, &line[3..]);
+                    load_line(writer, &line[3..])?;
                 }
             }
-        }).unwrap(); // FIXME
+            Ok(())
+        })?;
 
         Ok(result)
     }
 }
 
 
-fn load_line(writer: &mut DictionaryWriter, line: &str) {
-    if_let_some!(sep = line.find(" : "), ());
+fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
+    if_let_some!(sep = line.find(" : "), Ok(()));
     let (left, right) = line.split_at(sep);
     let right = &right[3..];
 
@@ -45,9 +46,11 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) {
         } else {
             format!("{}", right)
         };
-        writer.insert(left, &right).unwrap(); // FIXME
-        return;
+        writer.insert(left, &right)?;
+        return Ok(());
     }
 
-    writer.insert(left, right).unwrap(); // FIXME
+    writer.insert(left, right)?;
+
+    Ok(())
 }
