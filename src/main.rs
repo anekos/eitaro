@@ -2,6 +2,7 @@
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
 extern crate encoding;
+extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
 extern crate rusty_leveldb;
@@ -18,9 +19,9 @@ use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
-mod dictionary;
 mod http;
 mod loader;
+mod store;
 
 use loader::Loader;
 

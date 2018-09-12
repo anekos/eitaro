@@ -2,7 +2,7 @@
 use std::path::{Path, PathBuf};
 use std::error::Error;
 
-use dictionary::Dictionary;
+use store::Dictionary;
 use nickel::{Nickel, HttpRouter, Request, Response, MiddlewareResult};
 use percent_encoding::{percent_decode};
 
@@ -13,7 +13,7 @@ pub fn main<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), Box<Error>> {
     let mut server = Nickel::with_data(path);
 
     server.get("/word/:word", on_get_word);
-    server.listen("127.0.0.1:6767")?;
+    server.listen("127.0.0.1:6768")?;
     Ok(())
 }
 
@@ -27,8 +27,8 @@ fn on_get_word<'mw>(request: &mut Request<PathBuf>, response: Response<'mw, Path
 
 fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: Option<&str>) -> Result<String, Box<Error>> {
     let word = word.ok_or("No `word` paramter")?;
-    let word = percent_decode(word.as_bytes()).decode_utf8()?;
+    let word = percent_decode(word.as_bytes()).decode_utf8()?.to_string();
     println!("on_get_word: {:?}", word);
-    let mut dic = Dictionary::new(dictionary_path)?;
-    Ok(dic.get(&word).ok_or("Not found")??)
+    let mut dic = Dictionary::new(dictionary_path);
+    Ok(dic.get(word).unwrap()) // FIXME
 }

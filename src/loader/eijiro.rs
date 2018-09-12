@@ -2,7 +2,7 @@
 use std::error::Error;
 use std::path::Path;
 
-use dictionary::{Dictionary, DictionaryWriter};
+use store::{Dictionary, DictionaryWriter};
 use loader::Loader;
 
 
@@ -13,7 +13,7 @@ pub struct EijiroLoader();
 
 impl Loader for EijiroLoader {
     fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, Box<Error>> {
-        let mut result = Dictionary::new(dictionary_path)?;
+        let mut result = Dictionary::new(dictionary_path);
 
         result.writes(move |writer| {
             for line in source.lines() {
@@ -21,7 +21,7 @@ impl Loader for EijiroLoader {
                     load_line(writer, &line[3..]);
                 }
             }
-        })?;
+        }).unwrap(); // FIXME
 
         Ok(result)
     }
@@ -45,9 +45,9 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) {
         } else {
             format!("{}", right)
         };
-        writer.insert(left, &right);
+        writer.insert(left, &right).unwrap(); // FIXME
         return;
     }
 
-    writer.insert(left, right);
+    writer.insert(left, right).unwrap(); // FIXME
 }

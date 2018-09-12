@@ -2,7 +2,7 @@
 use std::error::Error;
 use std::path::Path;
 
-use dictionary::Dictionary;
+use store::Dictionary;
 
 pub mod eijiro;
 
