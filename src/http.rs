@@ -4,7 +4,7 @@ use std::error::Error;
 
 use dictionary::Dictionary;
 use nickel::{Nickel, HttpRouter, Request, Response, MiddlewareResult};
-use percent_encoding::{percent_decode, DEFAULT_ENCODE_SET};
+use percent_encoding::{percent_decode};
 
 
 
