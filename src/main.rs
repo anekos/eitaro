@@ -88,7 +88,7 @@ fn _main() -> Result<(), AppError> {
         let source_path = matches.value_of("dictionary-path").unwrap(); // Required
         build_dictionary(&source_path, &dictionary_path)
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
-        let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:6767");
+        let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
         http::main(&dictionary_path, bind_to)?;
         Ok(())
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
