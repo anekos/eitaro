@@ -30,16 +30,24 @@ impl Loader for EijiroLoader {
 
 fn load_line(writer: &mut DictionaryWriter, line: &str) {
     if_let_some!(sep = line.find(" : "), ());
-    let (mut left, right) = line.split_at(sep);
+    let (left, right) = line.split_at(sep);
     let right = &right[3..];
 
-    let _ = if let (Some(l), Some(r)) = (left.find('{'), left.rfind('}')) {
-        let (_left, tag) = left.split_at(l);
-        left = _left.trim();
-        Some(&tag[1..(r - l)])
-    } else {
-        None
-    };
+    if let (Some(l), Some(r)) = (left.find('{'), left.rfind('}')) {
+        let (left, tag) = left.split_at(l);
+        let left = left.trim();
+        let mut tag = &tag[1..(r - l)];
+        if let Some(hyphen) = tag.find('-') {
+            tag = &tag[0.. hyphen];
+        }
+        let right = if tag.chars().next().map(|it| it.is_digit(10)) == Some(false) {
+            format!("{{{}}} {}", tag, right)
+        } else {
+            format!("{}", right)
+        };
+        writer.insert(left, &right);
+        return;
+    }
 
     writer.insert(left, right);
 }
