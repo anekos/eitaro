@@ -8,6 +8,7 @@ extern crate failure;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
+extern crate readline;
 
 use std::fs::{create_dir_all, File};
 use std::io::Read;
@@ -15,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use app_dirs::{AppInfo, AppDataType};
-use clap::{AppSettings, Arg, SubCommand};
+use clap::{Arg, SubCommand};
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
@@ -62,9 +63,31 @@ fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppErro
     Ok(())
 }
 
+fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
+    use readline::Error::EndOfFile;
+
+    let mut dic = Dictionary::new(dictionary_path);
+    loop {
+        match readline::readline("Eitaro> ") {
+            Ok(input) => {
+                readline::add_history(&input)?;
+                if let Ok(found) = dic.get(input) {
+                    println!("{}", found);
+                }
+            },
+            Err(EndOfFile) => {
+                println!("");
+                break;
+            },
+            Err(_) => continue,
+        }
+    }
+
+    Ok(())
+}
+
 fn _main() -> Result<(), AppError> {
     let app = app_from_crate!()
-        .setting(AppSettings::SubcommandRequired)
         .subcommand(SubCommand::with_name("lookup")
                     .alias("l")
                     .about("Lookup")
@@ -99,7 +122,7 @@ fn _main() -> Result<(), AppError> {
         let word = matches.value_of("word").unwrap(); // Required
         lookup(&dictionary_path, word)
     } else {
-        panic!("WTF!");
+        interactive(&dictionary_path)
     }
 }
 

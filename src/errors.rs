@@ -9,6 +9,7 @@ use app_dirs::AppDirsError;
 use failure::{Context, Fail};
 use kv::{Store as KvStore, Error as KvError};
 use std::sync::PoisonError;
+use readline;
 
 
 
@@ -29,6 +30,8 @@ pub enum ErrorKind {
     Kv,
     #[fail(display = "Failed to lock")]
     Lock,
+    #[fail(display = "Readline error")]
+    Readline,
     #[fail(display = "Standard error")]
     Standard,
     #[fail(display = "UTF8 conversion error")]
@@ -63,6 +66,7 @@ macro_rules! def_from_error {
 def_from_error!(AppDirs, AppDirsError);
 def_from_error!(Io, IOError);
 def_from_error!(Kv, KvError);
+def_from_error!(Readline, readline::Error);
 def_from_error!(Utf8, Utf8Error);
 
 
