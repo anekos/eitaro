@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use app_dirs::{AppInfo, AppDataType};
-use clap::{Arg, SubCommand};
+use clap::{AppSettings, Arg, SubCommand};
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
@@ -64,6 +64,7 @@ fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppErro
 
 fn _main() -> Result<(), AppError> {
     let app = app_from_crate!()
+        .setting(AppSettings::SubcommandRequired)
         .subcommand(SubCommand::with_name("lookup")
                     .about("Lookup")
                     .arg(Arg::with_name("word")
