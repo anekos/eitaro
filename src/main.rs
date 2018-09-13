@@ -3,6 +3,7 @@
 #[macro_use] extern crate failure_derive;
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
+extern crate colored;
 extern crate encoding;
 extern crate failure;
 extern crate kv;
@@ -61,7 +62,8 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
 
 fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
-    println!("{}", dic.get(word.to_owned())?);
+    printer::print_colored(&dic.get(word.to_owned())?);
+    println!("");
     Ok(())
 }
 
@@ -74,7 +76,8 @@ fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
             Ok(input) => {
                 readline::add_history(&input)?;
                 if let Ok(found) = dic.get(input) {
-                    println!("{}", found);
+                    printer::print_colored(&found);
+                    println!("");
                 }
             },
             Err(EndOfFile) => {

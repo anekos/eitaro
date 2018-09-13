@@ -6,9 +6,16 @@ use pom::{Parser, TextInput};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Text {
-    Tag(String),
+    Annot(String),
+    Class(String),
+    Example(String),
+    Note(String),
     Plain(String),
+    Tag(String),
 }
+
+
+const SPECIALS: &str = "{}〈〉《》◆■";
 
 
 pub fn parse(input: &str) -> Result<Vec<Text>, String> {
@@ -17,12 +24,32 @@ pub fn parse(input: &str) -> Result<Vec<Text>, String> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = tag() | plain();
+    let p = annot() | class() | example() | tag() | note() | plain();
     p.repeat(0..)
 }
 
+fn annot() -> Parser<char, Text> {
+    let p = sym('〈') * none_of("〈〉").repeat(1..) - sym('〉');
+    p.map(|it| Text::Annot(v2s(it)))
+}
+
+fn class() -> Parser<char, Text> {
+    let p = sym('《') * none_of("《》").repeat(1..) - sym('》');
+    p.map(|it| Text::Class(v2s(it)))
+}
+
+fn example() -> Parser<char, Text> {
+    let p = seq("■・") * none_of(SPECIALS).repeat(1..);
+    p.map(|it| Text::Example(v2s(it)))
+}
+
+fn note() -> Parser<char, Text> {
+    let p = sym('◆') * none_of(SPECIALS).repeat(1..);
+    p.map(|it| Text::Note(v2s(it)))
+}
+
 fn plain() -> Parser<char, Text> {
-    let p = none_of("{}").repeat(1..);
+    let p = none_of(SPECIALS).repeat(1..);
     p.map(|it| Text::Plain(v2s(it)))
 }
 
