@@ -8,6 +8,7 @@ extern crate failure;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
+extern crate pom;
 extern crate readline;
 
 use std::fs::{create_dir_all, File};
@@ -24,6 +25,7 @@ use encoding::all::WINDOWS_31J;
 mod errors;
 mod http;
 mod loader;
+mod printer;
 mod store;
 
 use errors::AppError;
