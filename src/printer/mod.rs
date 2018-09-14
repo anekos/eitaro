@@ -26,6 +26,6 @@ fn print_text(text: &Text) {
         Note(s) => print!(" {}", s.cyan()),
         Plain(s) => print!("{}", s.white().bold()),
         Tag(s) => print!("{}", s.red().bold()),
-        Word(s) => print!("{} ", s.yellow().bold()),
+        Word(s) => print!("{} ", s.yellow().bold().reverse()),
     }
 }
