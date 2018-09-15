@@ -132,7 +132,7 @@ fn _main() -> Result<(), AppError> {
 }
 
 fn main() {
-    if let Err(err) =  _main() {
+    if let Err(err) = _main() {
         eprintln!("Error: {}", err);
         exit(1);
     }
