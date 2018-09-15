@@ -75,7 +75,7 @@ fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
         match readline::readline("Eitaro> ") {
             Ok(input) => {
                 readline::add_history(&input)?;
-                if let Ok(found) = dic.get(input) {
+                if let Ok(found) = dic.get(input.trim().to_string()) {
                     printer::print_colored(&found);
                     println!("");
                 }
