@@ -63,7 +63,7 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
 
 fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
-    printer::print_colored(&dic.get(word.to_owned())?);
+    printer::print_colored(&dic.get(word.trim().to_owned())?);
     Ok(())
 }
 
