@@ -12,6 +12,7 @@ pub enum Text {
     Note(String),
     Plain(String),
     Tag(String),
+    Word(String),
 }
 
 
@@ -24,7 +25,7 @@ pub fn parse(input: &str) -> Result<Vec<Text>, String> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = annot() | class() | example() | tag() | note() | plain();
+    let p = annot() | class() | example() | tag() | word() | note() | plain();
     p.repeat(0..)
 }
 
@@ -61,6 +62,12 @@ fn tag() -> Parser<char, Text> {
 fn v2s(s: Vec<char>) -> String {
     s.into_iter().collect()
 }
+
+fn word() -> Parser<char, Text> {
+    let p = seq("#") * none_of(SPECIALS).repeat(1..);
+    p.map(|it| Text::Word(v2s(it)))
+}
+
 
 
 #[cfg(test)]#[test]

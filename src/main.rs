@@ -28,6 +28,7 @@ mod http;
 mod loader;
 mod printer;
 mod store;
+mod str_utils;
 
 use errors::AppError;
 use loader::Loader;
@@ -56,14 +57,13 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
     let decoded = WINDOWS_31J.decode(&buffer, Replace).map_err(|err| err.to_string())?;
     eprintln!("Loading...");
     let ldr = loader::eijiro::EijiroLoader::default();
-    let _ = ldr.load(&decoded, dictionary_path);
+    ldr.load(&decoded, dictionary_path).unwrap();
     Ok(())
 }
 
 fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     printer::print_colored(&dic.get(word.to_owned())?);
-    println!("");
     Ok(())
 }
 

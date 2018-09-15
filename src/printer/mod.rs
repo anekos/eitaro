@@ -7,10 +7,12 @@ use self::parser::{Text, parse};
 
 
 pub fn print_colored(s: &str) {
-    let text = parse(s).unwrap(); // FIXME
-
-    for it in &text {
-        print_text(it);
+    for line in s.lines() {
+        let text = parse(line).unwrap(); // FIXME
+        for it in &text {
+            print_text(it);
+        }
+        println!("");
     }
 }
 
@@ -24,5 +26,6 @@ fn print_text(text: &Text) {
         Note(s) => print!(" {}", s.cyan()),
         Plain(s) => print!("{}", s.white().bold()),
         Tag(s) => print!("{}", s.red().bold()),
+        Word(s) => print!("{} ", s.yellow().bold()),
     }
 }
