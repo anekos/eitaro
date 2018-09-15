@@ -33,7 +33,7 @@ impl Loader for EijiroLoader {
 fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
     fn extract_aliases(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
         if let Some(changes) = right.find("【変化】") {
-            right = &right[changes..];
+            right = &right[changes + 12..];
             if let Some(paren) = right.find('【') {
                 right = &right[0..paren];
             }
