@@ -44,6 +44,13 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         Ok(())
     }
 
+    fn extract_link(writer: &mut DictionaryWriter, key: &str, right: &str) -> Result<(), AppError> {
+        if let (Some(0), Some(r)) = (right.find("＝<→"), right.find('>')) {
+            writer.alias(key, &right[7..r])?;
+        }
+        return Ok(());
+    }
+
     if_let_some!(sep = line.find(" : "), Ok(()));
     let (left, right) = line.split_at(sep);
     let right = &right[3..];
@@ -63,11 +70,13 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
             format!("{}", right)
         };
 
+        extract_link(writer, left, &right)?;
         extract_aliases(writer, left, &right)?;
         writer.insert(left, &right)?;
         return Ok(());
     }
 
+    extract_link(writer, left, &right)?;
     extract_aliases(writer, left, right)?;
     writer.insert(left, right)?;
 
