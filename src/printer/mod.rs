@@ -6,7 +6,15 @@ pub mod parser;
 use self::parser::{Text, parse};
 
 
-pub fn print_colored(s: &str) {
+pub fn print_colored_opt(s: Option<&str>) {
+    if let Some(s) = s {
+        print_colored(s);
+    } else {
+        println!("{}", "Not found".white().on_red().bold());
+    }
+}
+
+fn print_colored(s: &str) {
     for line in s.lines() {
         let text = parse(line).unwrap(); // FIXME
         for it in &text {
@@ -26,6 +34,6 @@ fn print_text(text: &Text) {
         Note(s) => print!(" {}", s.cyan()),
         Plain(s) => print!("{}", s.white().bold()),
         Tag(s) => print!("{}", s.red().bold()),
-        Word(s) => print!("{} ", s.yellow().bold().reverse()),
+        Word(s) => print!("{} ", s.black().on_yellow().bold()),
     }
 }

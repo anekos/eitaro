@@ -55,13 +55,20 @@ impl Dictionary {
         Ok(())
     }
 
-    pub fn get(&mut self, word: String) -> Result<String, AppError> {
+    pub fn get(&mut self, word: String) -> Result<Option<String>, AppError> {
         fn fix(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
             match result {
                 Ok(found) => Ok(Some(found)),
                 Err(KvError::NotFound) => Ok(None),
                 Err(err) => Err(err),
             }
+        }
+
+        fn opt(result: Vec<String>) -> Option<String> {
+            if result.is_empty() {
+                return None;
+            }
+            Some(result.join("\n"))
         }
 
         let word = word.to_lowercase();
@@ -71,25 +78,20 @@ impl Dictionary {
         let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
         let transaction = store.read_txn()?;
 
-        let mut result = "".to_owned();
-        let mut main_found = false;
+        let mut result = vec![];
 
         if let Some(ref main) = fix(transaction.get(&main_bucket, word.clone()))? {
-            result.push_str(&format!("#{}\n{}\n", word, main));
-            main_found = true;
+            result.push(format!("#{}\n{}\n", word, main));
         }
 
-        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(result));
+        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(result)));
         if alias == word {
-            return Ok(result);
+            return Ok(opt(result));
         }
-        if_let_some!(aliased = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(result));
-        if main_found {
-            result.push_str("\n");
-        }
-        result.push_str(&format!("#{}\n{}", alias, aliased));
+        if_let_some!(aliased = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(result)));
+        result.push(format!("#{}\n{}", alias, aliased));
 
-        Ok(result)
+        Ok(opt(result))
     }
 }
 
