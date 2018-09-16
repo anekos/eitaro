@@ -33,8 +33,8 @@ fn on_get_word<'mw>(request: &mut Request<PathBuf>, mut response: Response<'mw, 
 
 fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: Option<&str>) -> Result<Option<String>, AppError> {
     let word = word.ok_or(ErrorKind::Eitaro("No `word` paramter"))?;
-    let word = percent_decode(word.as_bytes()).decode_utf8()?.to_string();
+    let word = percent_decode(word.as_bytes()).decode_utf8()?;
     println!("on_get_word: {:?}", word);
     let mut dic = Dictionary::new(dictionary_path);
-    Ok(dic.get(word)?)
+    Ok(dic.get(&word)?)
 }

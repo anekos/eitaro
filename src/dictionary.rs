@@ -55,7 +55,7 @@ impl Dictionary {
         Ok(())
     }
 
-    pub fn get(&mut self, word: String) -> Result<Option<String>, AppError> {
+    pub fn get(&mut self, word: &str) -> Result<Option<String>, AppError> {
         fn fix(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
             match result {
                 Ok(found) => Ok(Some(found)),
@@ -64,7 +64,7 @@ impl Dictionary {
             }
         }
 
-        fn opt(result: Vec<String>) -> Option<String> {
+        fn opt(result: &[String]) -> Option<String> {
             if result.is_empty() {
                 return None;
             }
@@ -84,14 +84,14 @@ impl Dictionary {
             result.push(format!("#{}\n{}\n", word, main));
         }
 
-        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(result)));
+        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(&result)));
         if alias == word {
-            return Ok(opt(result));
+            return Ok(opt(&result));
         }
-        if_let_some!(aliased = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(result)));
+        if_let_some!(aliased = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(&result)));
         result.push(format!("#{}\n{}", alias, aliased));
 
-        Ok(opt(result))
+        Ok(opt(&result))
     }
 }
 

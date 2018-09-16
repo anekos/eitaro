@@ -48,7 +48,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         if let (Some(0), Some(r)) = (right.find("＝<→"), right.find('>')) {
             writer.alias(key, &right[7..r])?;
         }
-        return Ok(());
+        Ok(())
     }
 
     if_let_some!(sep = line.find(" : "), Ok(()));
@@ -67,7 +67,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         let right = if tag.chars().next().map(|it| it.is_digit(10)) == Some(false) {
             format!("{{{}}} {}", tag, right)
         } else {
-            format!("{}", right)
+            right.to_string()
         };
 
         extract_link(writer, left, &right)?;

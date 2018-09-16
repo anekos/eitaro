@@ -23,7 +23,7 @@ fn print_colored(s: &str) -> Result<(), AppError> {
         for it in &text {
             print_text(it);
         }
-        println!("");
+        println!();
     }
     Ok(())
 }
