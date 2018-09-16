@@ -7,6 +7,7 @@ use percent_encoding::{percent_decode};
 
 use dictionary::Dictionary;
 use errors::{AppError, ErrorKind};
+use printer;
 
 
 
@@ -14,15 +15,31 @@ pub fn main<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str) -> Result<(), Ap
     let path: PathBuf = dictionary_path.as_ref().to_path_buf();
     let mut server = Nickel::with_data(path);
 
-    server.get("/word/:word", on_get_word);
+    server.get("/plain/:word", on_get_word_plain);
+    server.get("/html/:word", on_get_word_html);
     server.listen(bind_to)?;
     Ok(())
 }
 
-fn on_get_word<'mw>(request: &mut Request<PathBuf>, mut response: Response<'mw, PathBuf>) -> MiddlewareResult<'mw, PathBuf> {
+fn on_get_word_plain<'mw>(request: &mut Request<PathBuf>, mut response: Response<'mw, PathBuf>) -> MiddlewareResult<'mw, PathBuf> {
     let path = &*request.server_data();
     match get_word(path, request.param("word")) {
         Ok(Some(content)) => response.send(content),
+        Ok(None) => {
+            response.set(StatusCode::NotFound);
+            response.send("Not found")
+        },
+        Err(err) => response.send(format!("Error: {}", err)),
+    }
+}
+
+fn on_get_word_html<'mw>(request: &mut Request<PathBuf>, mut response: Response<'mw, PathBuf>) -> MiddlewareResult<'mw, PathBuf> {
+    let path = &*request.server_data();
+    match get_word(path, request.param("word")) {
+        Ok(Some(content)) => {
+            let content = printer::html::generate(&content).unwrap();
+            response.send(content)
+        }
         Ok(None) => {
             response.set(StatusCode::NotFound);
             response.send("Not found")

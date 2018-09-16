@@ -6,6 +6,7 @@ extern crate app_dirs;
 extern crate colored;
 extern crate encoding;
 extern crate failure;
+extern crate htmlescape;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
@@ -63,7 +64,7 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
 
 fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
-    printer::print_colored_opt(dic.get(word.trim().to_owned())?.as_ref().map(String::as_str))
+    printer::terminal::print_colored_opt(dic.get(word.trim().to_owned())?.as_ref().map(String::as_str))
 }
 
 fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
@@ -74,7 +75,7 @@ fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
         match readline::readline("Eitaro> ") {
             Ok(input) => {
                 readline::add_history(&input)?;
-                printer::print_colored_opt(dic.get(input.trim().to_string())?.as_ref().map(String::as_str))?;
+                printer::terminal::print_colored_opt(dic.get(input.trim().to_string())?.as_ref().map(String::as_str))?;
             },
             Err(EndOfFile) => {
                 println!("");
