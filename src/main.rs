@@ -63,7 +63,7 @@ fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_
 
 fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
-    printer::print_colored_opt(dic.get(word.trim().to_owned())?.as_ref().map(String::as_str))
+    lookup_and_print_lines(&mut dic, word)
 }
 
 fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
@@ -72,9 +72,9 @@ fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     loop {
         match readline::readline("Eitaro> ") {
-            Ok(input) => {
-                readline::add_history(&input)?;
-                printer::print_colored_opt(dic.get(input.trim().to_string())?.as_ref().map(String::as_str))?;
+            Ok(ref input) => {
+                readline::add_history(input)?;
+                lookup_and_print_lines(&mut dic, input)?;
             },
             Err(EndOfFile) => {
                 println!("");
@@ -84,6 +84,13 @@ fn interactive<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
         }
     }
 
+    Ok(())
+}
+
+fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> Result<(), AppError> {
+    for line in s.lines() {
+        printer::print_colored_opt(dic.get(line.trim().to_owned())?.as_ref().map(String::as_str))?;
+    }
     Ok(())
 }
 
