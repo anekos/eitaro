@@ -3,25 +3,29 @@ use colored::*;
 
 pub mod parser;
 
+use errors::AppError;
 use self::parser::{Text, parse};
 
 
-pub fn print_colored_opt(s: Option<&str>) {
+
+pub fn print_colored_opt(s: Option<&str>) -> Result<(), AppError> {
     if let Some(s) = s {
-        print_colored(s);
+        print_colored(s)?;
     } else {
         println!("{}", "Not found".white().on_red().bold());
     }
+    Ok(())
 }
 
-fn print_colored(s: &str) {
+fn print_colored(s: &str) -> Result<(), AppError> {
     for line in s.lines() {
-        let text = parse(line).unwrap(); // FIXME
+        let text = parse(line)?;
         for it in &text {
             print_text(it);
         }
         println!("");
     }
+    Ok(())
 }
 
 fn print_text(text: &Text) {
