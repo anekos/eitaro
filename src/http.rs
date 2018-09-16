@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use nickel::{Nickel, HttpRouter, Request, Response, MiddlewareResult};
 use percent_encoding::{percent_decode};
 
-use store::Dictionary;
+use dictionary::Dictionary;
 use errors::{AppError, ErrorKind};
 
 

@@ -1,8 +1,8 @@
 
 use std::path::Path;
 
+use dictionary::Dictionary;
 use errors::AppError;
-use store::Dictionary;
 
 pub mod eijiro;
 

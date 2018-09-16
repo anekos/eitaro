@@ -23,16 +23,16 @@ use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
+mod dictionary;
 mod errors;
 mod http;
 mod loader;
 mod printer;
-mod store;
 mod str_utils;
 
 use errors::AppError;
 use loader::Loader;
-use store::Dictionary;
+use dictionary::Dictionary;
 
 
 

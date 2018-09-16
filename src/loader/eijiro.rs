@@ -1,9 +1,9 @@
 
 use std::path::Path;
 
+use dictionary::{Dictionary, DictionaryWriter};
 use errors::AppError;
 use loader::Loader;
-use store::{Dictionary, DictionaryWriter};
 use str_utils::scan_words;
 
 
