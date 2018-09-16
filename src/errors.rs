@@ -6,7 +6,7 @@ use std::str::Utf8Error;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 
 use app_dirs::AppDirsError;
-use failure::{Context, Fail};
+use failure::{Context, Fail, Backtrace};
 use kv::{Store as KvStore, Error as KvError};
 use std::sync::PoisonError;
 use readline;
@@ -33,7 +33,7 @@ pub enum ErrorKind {
     #[fail(display = "Readline error")]
     Readline,
     #[fail(display = "Standard error")]
-    Standard,
+    Standard(String),
     #[fail(display = "UTF8 conversion error")]
     Utf8,
 }
@@ -41,7 +41,38 @@ pub enum ErrorKind {
 
 impl Display for AppError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        Display::fmt(&self.inner, f)
+        use self::ErrorKind::*;
+
+        match self.inner.get_context() {
+            Standard(error) => writeln!(f, "{}", error),
+            Eitaro(error) => writeln!(f, "{}", error),
+            _ => Display::fmt(&self.inner, f),
+
+        }
+    }
+}
+
+impl Fail for AppError {
+    fn cause(&self) -> Option<&Fail> {
+        self.inner.cause()
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> {
+        self.inner.backtrace()
+    }
+}
+
+impl From<ErrorKind> for AppError {
+    fn from(kind: ErrorKind) -> Self {
+        AppError {
+            inner: Context::new(kind),
+        }
+    }
+}
+
+impl From<Context<ErrorKind>> for AppError {
+    fn from(inner: Context<ErrorKind>) -> Self {
+        AppError { inner }
     }
 }
 
@@ -69,15 +100,6 @@ def_from_error!(Kv, KvError);
 def_from_error!(Readline, readline::Error);
 def_from_error!(Utf8, Utf8Error);
 
-
-impl From<ErrorKind> for AppError {
-    fn from(kind: ErrorKind) -> AppError {
-        AppError {
-            inner: Context::new(kind),
-        }
-    }
-}
-
 impl<'a> From<PoisonError<RwLockWriteGuard<'a, KvStore>>> for AppError {
     fn from(_error: PoisonError<RwLockWriteGuard<'a, KvStore>>) -> AppError {
         AppError {
@@ -95,17 +117,15 @@ impl<'a> From<PoisonError<RwLockReadGuard<'a, KvStore>>> for AppError {
 }
 
 impl From<Box<StdError>> for AppError {
-    fn from(_error: Box<StdError>) -> AppError {
-        AppError {
-            inner: Context::from(ErrorKind::Standard),
-        }
+    fn from(error: Box<StdError>) -> AppError {
+        AppError::from(ErrorKind::Standard(error.description().to_owned()))
     }
 }
 
 impl From<String> for AppError {
-    fn from(_error: String) -> AppError {
+    fn from(error: String) -> AppError {
         AppError {
-            inner: Context::from(ErrorKind::Standard),
+            inner: Context::from(ErrorKind::Standard(error)),
         }
     }
 }

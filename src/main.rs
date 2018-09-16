@@ -135,8 +135,19 @@ fn _main() -> Result<(), AppError> {
 }
 
 fn main() {
+    use failure::Fail;
+
     if let Err(err) = _main() {
-        eprintln!("Error: {}", err);
+        let mut fail: &Fail = &err;
+        let mut message = err.to_string();
+
+        while let Some(cause) = fail.cause() {
+            message.push_str(&format!("\n\tcaused by: {}", cause));
+            fail = cause;
+        }
+
+        eprintln!("Error: {}", message);
+
         exit(1);
     }
 }
