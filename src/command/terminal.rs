@@ -28,6 +28,10 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
     loop {
         match readline::readline("Eitaro> ") {
             Ok(ref input) => {
+                let input = input.trim();
+                if input.is_empty() {
+                    continue;
+                }
                 lookup_and_print_lines(&mut dic, input)?;
                 let _ = append_history(input);
             },
