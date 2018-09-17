@@ -12,34 +12,21 @@ extern crate percent_encoding;
 extern crate pom;
 extern crate readline;
 
-use std::fs::{create_dir_all};
-use std::path::PathBuf;
 use std::process::exit;
 
-use app_dirs::{AppInfo, AppDataType};
 use clap::{Arg, SubCommand};
 
+mod command;
 mod dictionary;
 mod errors;
+mod loader;
+mod path;
 mod printer;
 mod str_utils;
-mod command;
-mod loader;
 
 use errors::AppError;
 
 
-
-const APP_INFO: AppInfo = AppInfo { name: "eitaro", author: "anekos" };
-
-
-fn get_dictionary_path() -> Result<PathBuf, AppError> {
-    let result = app_dirs::get_app_dir(AppDataType::UserCache, &APP_INFO, "dictionary")?;
-    if !result.exists() {
-        create_dir_all(&result)?;
-    }
-    Ok(result)
-}
 
 fn _main() -> Result<(), AppError> {
     let app = app_from_crate!()
@@ -64,7 +51,7 @@ fn _main() -> Result<(), AppError> {
 
     let matches = app.get_matches();
 
-    let dictionary_path = get_dictionary_path()?;
+    let dictionary_path = path::get_dictionary_path()?;
 
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let source_path = matches.value_of("dictionary-path").unwrap(); // Required
