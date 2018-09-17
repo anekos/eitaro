@@ -10,7 +10,7 @@ use errors::{AppError, ErrorKind};
 
 
 
-pub fn main<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str) -> Result<(), AppError> {
+pub fn start_server<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str) -> Result<(), AppError> {
     let path: PathBuf = dictionary_path.as_ref().to_path_buf();
     let mut server = Nickel::with_data(path);
 
