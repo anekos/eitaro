@@ -11,7 +11,7 @@
 
     document.body.addEventListener('mousemove', ev => {
       const word = extractWordOnCursor(ev.target, ev.clientX, ev.clientY);
-      if ((lastWord == word) || !CharPattern.test(word))
+      if (!word || (lastWord == word) || !CharPattern.test(word))
         return;
       fetch(EndPoint + '/word/' + encodeURIComponent(word));
       lastWord = word;
