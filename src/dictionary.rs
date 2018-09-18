@@ -1,5 +1,5 @@
 
-use std::mem::swap;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use kv::{Bucket, Config, Manager, Txn, Error as KvError};
@@ -17,17 +17,11 @@ pub struct Dictionary {
     config: Config,
 }
 
-#[derive(Default)]
-pub struct MergeBuffer {
-    buffered: Option<String>,
-    entries: Vec<String>,
-}
-
 pub struct DictionaryWriter<'a> {
-    transaction: Txn<'a>,
-    main_bucket: Bucket<'a, String, String>,
     alias_bucket: Bucket<'a, String, String>,
-    merge_buffer: MergeBuffer,
+    main_bucket: Bucket<'a, String, String>,
+    merge_table: BTreeMap<String, Vec<String>>,
+    transaction: Txn<'a>,
 }
 
 
@@ -98,20 +92,19 @@ impl Dictionary {
 impl<'a> DictionaryWriter<'a> {
     fn new(transaction: Txn<'a>, main_bucket: Bucket<'a, String, String>, alias_bucket: Bucket<'a, String, String>) -> Self {
         DictionaryWriter {
-            transaction,
-            main_bucket,
             alias_bucket,
-            merge_buffer: MergeBuffer::default(),
+            main_bucket,
+            merge_table: BTreeMap::default(),
+            transaction,
         }
     }
 
     pub fn insert(&mut self, key: &str, value: &str) -> Result<(), AppError> {
         let key = key.to_lowercase();
 
-        if let Some((key, values)) = self.merge_buffer.insert(&key, value) {
-            self.transaction.set(&self.main_bucket, key.to_owned(), values.join("\n"))?;
-        }
-        Ok(())
+        let entries = self.merge_table.entry(key).or_insert_with(|| vec![]);
+        entries.push(value.to_owned());
+        return Ok(());
     }
 
     pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
@@ -120,37 +113,11 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     fn complete(mut self) -> Result<(), AppError> {
-        if let Some((key, values)) = self.merge_buffer.flush() {
+        for (key, values) in self.merge_table {
             self.transaction.set(&self.main_bucket, key, values.join("\n"))?;
         }
+
         self.transaction.commit()?;
         Ok(())
-    }
-}
-
-impl MergeBuffer {
-    fn insert(&mut self, key: &str, value: &str) -> Option<(String, Vec<String>)> {
-        if let Some(buffered) = self.buffered.as_ref() {
-            if buffered == key {
-                self.entries.push(value.to_owned());
-                return None;
-            }
-        }
-
-        let result = self.flush();
-        self.buffered = Some(key.to_owned());
-        self.entries.push(value.to_owned());
-        result
-    }
-
-    fn flush(&mut self) -> Option<(String, Vec<String>)> {
-        if let Some(buffered) = self.buffered.take() {
-            let mut result = vec![];
-            let old_key = buffered.clone();
-            swap(&mut self.entries, &mut result);
-            Some((old_key, result))
-        } else {
-            None
-        }
     }
 }
