@@ -11,7 +11,6 @@
     const word = extractWordOnCursor(ev.target, ev.clientX, ev.clientY);
     if ((lastWord == word) || !CharPattern.test(word))
       return;
-    console.log(word);
     fetch('http://127.0.0.1:8116/word/' + encodeURIComponent(word)).then(resp => console.log(resp));
     lastWord = word;
   });
