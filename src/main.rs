@@ -6,11 +6,13 @@ extern crate app_dirs;
 extern crate colored;
 extern crate encoding;
 extern crate failure;
+extern crate hyper;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
 extern crate pom;
 extern crate readline;
+extern crate unicase;
 
 use std::process::exit;
 

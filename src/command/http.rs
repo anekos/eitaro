@@ -1,9 +1,12 @@
 
 use std::path::{Path, PathBuf};
 
+use hyper::method::Method;
+use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin};
+use unicase::UniCase;
 use nickel::status::StatusCode;
 use nickel::{Nickel, HttpRouter, Request, Response, MiddlewareResult};
-use percent_encoding::{percent_decode};
+use percent_encoding::percent_decode;
 
 use dictionary::{Dictionary, Entry};
 use errors::{AppError, ErrorKind};
@@ -27,6 +30,13 @@ pub fn start_server<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str, do_print
 }
 
 fn on_get_word<'mw>(request: &mut Request<Config>, mut response: Response<'mw, Config>) -> MiddlewareResult<'mw, Config> {
+    {
+        let headers = response.headers_mut();
+        headers.set(AccessControlAllowOrigin::Any);
+        headers.set(AccessControlAllowMethods(vec![Method::Get]));
+        headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
+    }
+
     let config = &*request.server_data();
     match get_word(&config.path, request.param("word")) {
         Ok(entries) => {
