@@ -9,13 +9,15 @@ use self::parser::{Text, parse};
 
 
 
-pub fn print_colored_opt(entries: &Option<Vec<Entry>>) -> Result<(), AppError> {
+pub fn print_colored_opt(entries: &Option<Vec<Entry>>, ignore_none: bool) -> Result<(), AppError> {
     if let Some(entries) = entries.as_ref() {
         for entry in entries {
             print_colored(entry)?;
         }
     } else {
-        println!("{}", "Not found".white().on_red().bold());
+        if !ignore_none {
+            println!("{}", "Not found".white().on_red().bold());
+        }
     }
     Ok(())
 }

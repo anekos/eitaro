@@ -27,6 +27,7 @@ mod printer;
 mod str_utils;
 
 use errors::AppError;
+use command::http::{Config as HttpConfig};
 
 
 
@@ -54,6 +55,10 @@ fn _main() -> Result<(), AppError> {
                          .help("Clear before print")
                          .short("c")
                          .long("clear"))
+                    .arg(Arg::with_name("ignore")
+                         .help("Ignore not found")
+                         .short("i")
+                         .long("ignore"))
                     .arg(Arg::with_name("print")
                          .help("Print result stdout")
                          .short("p")
@@ -77,10 +82,13 @@ fn _main() -> Result<(), AppError> {
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
         let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
         command::http::start_server(
-            &dictionary_path,
             bind_to,
-            matches.is_present("print"),
-            matches.is_present("clear"))?;
+            HttpConfig {
+                clear_before_print: matches.is_present("clear"),
+                dictionary_path,
+                do_print: matches.is_present("print"),
+                ignore_not_found: matches.is_present("ignore"),
+            })?;
         Ok(())
     } else {
         command::terminal::shell(&dictionary_path)

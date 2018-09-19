@@ -14,17 +14,16 @@ use printer::print_colored_opt;
 
 
 
-struct Config {
-    clear_before_print: bool,
-    do_print: bool,
-    path: PathBuf,
+pub struct Config {
+    pub clear_before_print: bool,
+    pub dictionary_path: PathBuf,
+    pub do_print: bool,
+    pub ignore_not_found: bool,
 }
 
 
-pub fn start_server<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str, do_print: bool, clear_before_print: bool) -> Result<(), AppError> {
-    let path: PathBuf = dictionary_path.as_ref().to_path_buf();
-    let mut server = Nickel::with_data(Config { do_print, clear_before_print, path});
-
+pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
+    let mut server = Nickel::with_data(config);
     server.get("/word/:word", on_get_word);
     server.listen(bind_to)?;
     Ok(())
@@ -39,13 +38,13 @@ fn on_get_word<'mw>(request: &mut Request<Config>, mut response: Response<'mw, C
     }
 
     let config = &*request.server_data();
-    match get_word(&config.path, request.param("word")) {
+    match get_word(&config.dictionary_path, request.param("word")) {
         Ok(entries) => {
             if config.do_print {
-                if config.clear_before_print {
+                if config.clear_before_print && (!config.ignore_not_found || entries.is_some()){
                     print!("\x1b[2J\x1b[H");
                 }
-                if let Err(err) = print_colored_opt(&entries) {
+                if let Err(err) = print_colored_opt(&entries, config.ignore_not_found) {
                     eprintln!("Error: {}", err);
                 }
             }
