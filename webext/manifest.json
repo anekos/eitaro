@@ -1,0 +1,30 @@
+{
+  "description": "Eitaro",
+  "manifest_version": 2,
+  "name": "Eitaro",
+  "version": "0.0.1",
+  "icons": {
+    "64": "icon/64.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/content.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  "permissions": [
+    "<all_urls>"
+  ],
+  "applications": {
+    "gecko": {
+      "id": "eitaro@snca.net",
+      "strict_min_version": "57.0"
+    }
+  }
+}
