@@ -50,6 +50,10 @@ fn _main() -> Result<(), AppError> {
         .subcommand(SubCommand::with_name("server")
                     .alias("s")
                     .about("HTTP Server")
+                    .arg(Arg::with_name("clear")
+                         .help("Clear before print")
+                         .short("c")
+                         .long("clear"))
                     .arg(Arg::with_name("print")
                          .help("Print result stdout")
                          .short("p")
@@ -75,7 +79,8 @@ fn _main() -> Result<(), AppError> {
         command::http::start_server(
             &dictionary_path,
             bind_to,
-            matches.is_present("print"))?;
+            matches.is_present("print"),
+            matches.is_present("clear"))?;
         Ok(())
     } else {
         command::terminal::shell(&dictionary_path)

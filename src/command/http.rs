@@ -15,14 +15,15 @@ use printer::print_colored_opt;
 
 
 struct Config {
+    clear_before_print: bool,
     do_print: bool,
     path: PathBuf,
 }
 
 
-pub fn start_server<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str, do_print: bool) -> Result<(), AppError> {
+pub fn start_server<T: AsRef<Path>>(dictionary_path: &T, bind_to: &str, do_print: bool, clear_before_print: bool) -> Result<(), AppError> {
     let path: PathBuf = dictionary_path.as_ref().to_path_buf();
-    let mut server = Nickel::with_data(Config { do_print, path });
+    let mut server = Nickel::with_data(Config { do_print, clear_before_print, path});
 
     server.get("/word/:word", on_get_word);
     server.listen(bind_to)?;
@@ -41,6 +42,9 @@ fn on_get_word<'mw>(request: &mut Request<Config>, mut response: Response<'mw, C
     match get_word(&config.path, request.param("word")) {
         Ok(entries) => {
             if config.do_print {
+                if config.clear_before_print {
+                    print!("\x1b[2J\x1b[H");
+                }
                 if let Err(err) = print_colored_opt(&entries) {
                     eprintln!("Error: {}", err);
                 }
