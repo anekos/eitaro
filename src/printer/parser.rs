@@ -26,7 +26,7 @@ pub fn parse(input: &str) -> Result<Vec<Text>, String> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = annot() | class() | example() | tag() | word() | note() | line_break() | plain();
+    let p = annot() | class() | example() | tag() | word() | note() | plain() | line_break();
     p.repeat(0..)
 }
 
@@ -41,8 +41,12 @@ fn class() -> Parser<char, Text> {
 }
 
 fn example() -> Parser<char, Text> {
-    let p = seq("■・") * none_of(SPECIALS).repeat(1..);
-    p.map(|it| Text::Example(v2s(it)))
+    let p1 = sym('■');
+    let p2 = sym('・') * none_of(SPECIALS).repeat(1..);
+    let p2 = p2.map(|it| Text::Example(v2s(it)));
+    let p3 = none_of(SPECIALS).repeat(1..);
+    let p3 = p3.map(|it| Text::Plain(format!("■{}", v2s(it))));
+    p1 * (p2 | p3)
 }
 
 fn line_break() -> Parser<char, Text> {
@@ -70,7 +74,7 @@ fn v2s(s: Vec<char>) -> String {
 }
 
 fn word() -> Parser<char, Text> {
-    let p = seq("#") * sym(' ').repeat(0..) * none_of(SPECIALS).repeat(1..) - seq("\n");
+    let p = seq("#") * sym(' ').repeat(0..) * none_of("\n").repeat(1..) - seq("\n");
     p.map(|it| Text::Word(v2s(it)))
 }
 
@@ -87,4 +91,9 @@ fn test_parser() {
         Ok(vec![
            Text::Tag("foo".to_string()),
            Text::Plain(" plain hoge".to_string())]));
+
+    assert_eq!(
+        parse("■meow :"),
+        Ok(vec![
+           Text::Plain("■meow :".to_string())]));
 }
