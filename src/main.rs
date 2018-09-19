@@ -30,21 +30,28 @@ use errors::AppError;
 
 fn _main() -> Result<(), AppError> {
     let app = app_from_crate!()
-        .subcommand(SubCommand::with_name("lookup")
-                    .alias("l")
-                    .about("Lookup")
-                    .arg(Arg::with_name("word")
-                         .help("Word")
-                         .required(true)))
         .subcommand(SubCommand::with_name("build")
                     .alias("b")
                     .about("Build dictionary")
                     .arg(Arg::with_name("dictionary-path")
                          .help("Dictionary file path")
                          .required(true)))
+        .subcommand(SubCommand::with_name("color")
+                    .alias("c")
+                    .about("Color dictionary text from STDIN"))
+        .subcommand(SubCommand::with_name("lookup")
+                    .alias("l")
+                    .about("Lookup")
+                    .arg(Arg::with_name("word")
+                         .help("Word")
+                         .required(true)))
         .subcommand(SubCommand::with_name("server")
                     .alias("s")
                     .about("HTTP Server")
+                    .arg(Arg::with_name("print")
+                         .help("Print result stdout")
+                         .short("p")
+                         .long("print"))
                     .arg(Arg::with_name("bind-to")
                          .help("host:port to listen")
                          .required(false)));
@@ -56,13 +63,18 @@ fn _main() -> Result<(), AppError> {
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let source_path = matches.value_of("dictionary-path").unwrap(); // Required
         command::builder::build_dictionary(&source_path, &dictionary_path)
-    } else if let Some(ref matches) = matches.subcommand_matches("server") {
-        let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
-        command::http::start_server(&dictionary_path, bind_to)?;
-        Ok(())
+    } else if matches.subcommand_matches("color").is_some() {
+        command::terminal::color()
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)
+    } else if let Some(ref matches) = matches.subcommand_matches("server") {
+        let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
+        command::http::start_server(
+            &dictionary_path,
+            bind_to,
+            matches.is_present("print"))?;
+        Ok(())
     } else {
         command::terminal::shell(&dictionary_path)
     }

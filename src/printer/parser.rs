@@ -9,6 +9,7 @@ pub enum Text {
     Annot(String),
     Class(String),
     Example(String),
+    LineBreak,
     Note(String),
     Plain(String),
     Tag(String),
@@ -16,7 +17,7 @@ pub enum Text {
 }
 
 
-const SPECIALS: &str = "{}〈〉《》◆■";
+const SPECIALS: &str = "{}〈〉《》◆■\n";
 
 
 pub fn parse(input: &str) -> Result<Vec<Text>, String> {
@@ -25,7 +26,7 @@ pub fn parse(input: &str) -> Result<Vec<Text>, String> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = annot() | class() | example() | tag() | word() | note() | plain();
+    let p = annot() | class() | example() | tag() | word() | note() | line_break() | plain();
     p.repeat(0..)
 }
 
@@ -42,6 +43,11 @@ fn class() -> Parser<char, Text> {
 fn example() -> Parser<char, Text> {
     let p = seq("■・") * none_of(SPECIALS).repeat(1..);
     p.map(|it| Text::Example(v2s(it)))
+}
+
+fn line_break() -> Parser<char, Text> {
+    let p = seq("\n");
+    p.map(|_| Text::LineBreak)
 }
 
 fn note() -> Parser<char, Text> {
@@ -64,7 +70,7 @@ fn v2s(s: Vec<char>) -> String {
 }
 
 fn word() -> Parser<char, Text> {
-    let p = seq("#") * none_of(SPECIALS).repeat(1..);
+    let p = seq("#") * sym(' ').repeat(0..) * none_of(SPECIALS).repeat(1..) - seq("\n");
     p.map(|it| Text::Word(v2s(it)))
 }
 

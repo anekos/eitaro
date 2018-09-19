@@ -17,6 +17,12 @@ pub struct Dictionary {
     config: Config,
 }
 
+#[derive(Debug)]
+pub struct Entry {
+    pub key: String,
+    pub content: String,
+}
+
 pub struct DictionaryWriter<'a> {
     alias_bucket: Bucket<'a, String, String>,
     main_bucket: Bucket<'a, String, String>,
@@ -49,7 +55,7 @@ impl Dictionary {
         Ok(())
     }
 
-    pub fn get(&mut self, word: &str) -> Result<Option<String>, AppError> {
+    pub fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         fn fix(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
             match result {
                 Ok(found) => Ok(Some(found)),
@@ -58,11 +64,11 @@ impl Dictionary {
             }
         }
 
-        fn opt(result: &[String]) -> Option<String> {
+        fn opt(result: Vec<Entry>) -> Option<Vec<Entry>> {
             if result.is_empty() {
                 return None;
             }
-            Some(result.join("\n"))
+            Some(result)
         }
 
         let word = word.to_lowercase();
@@ -74,18 +80,18 @@ impl Dictionary {
 
         let mut result = vec![];
 
-        if let Some(ref main) = fix(transaction.get(&main_bucket, word.clone()))? {
-            result.push(format!("#{}\n{}\n", word, main));
+        if let Some(content) = fix(transaction.get(&main_bucket, word.clone()))? {
+            result.push(Entry { key: word.clone(), content });
         }
 
-        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(&result)));
+        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(result)));
         if alias == word {
-            return Ok(opt(&result));
+            return Ok(opt(result));
         }
-        if_let_some!(aliased = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(&result)));
-        result.push(format!("#{}\n{}", alias, aliased));
+        if_let_some!(content = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(result)));
+        result.push(Entry { key: alias, content });
 
-        Ok(opt(&result))
+        Ok(opt(result))
     }
 }
 
@@ -104,7 +110,7 @@ impl<'a> DictionaryWriter<'a> {
 
         let entries = self.merge_table.entry(key).or_insert_with(|| vec![]);
         entries.push(value.to_owned());
-        return Ok(());
+        Ok(())
     }
 
     pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
@@ -113,7 +119,8 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     fn complete(mut self) -> Result<(), AppError> {
-        for (key, values) in self.merge_table {
+        for (key, mut values) in self.merge_table {
+            values.push("".to_string());
             self.transaction.set(&self.main_bucket, key, values.join("\n"))?;
         }
 
