@@ -24,18 +24,26 @@ pub struct Config {
 
 pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
     let mut server = Nickel::with_data(config);
+    server.get("/ack", on_ack);
     server.get("/word/:word", on_get_word);
     server.listen(bind_to)?;
     Ok(())
 }
 
+fn set_cors<'mw>(response: &mut Response<'mw, Config>) {
+    let headers = response.headers_mut();
+    headers.set(AccessControlAllowOrigin::Any);
+    headers.set(AccessControlAllowMethods(vec![Method::Get]));
+    headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
+}
+
+fn on_ack<'mw>(_: &mut Request<Config>, mut response: Response<'mw, Config>) -> MiddlewareResult<'mw, Config> {
+    set_cors(&mut response);
+    response.send("␆")
+}
+
 fn on_get_word<'mw>(request: &mut Request<Config>, mut response: Response<'mw, Config>) -> MiddlewareResult<'mw, Config> {
-    {
-        let headers = response.headers_mut();
-        headers.set(AccessControlAllowOrigin::Any);
-        headers.set(AccessControlAllowMethods(vec![Method::Get]));
-        headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
-    }
+    set_cors(&mut response);
 
     let config = &*request.server_data();
     match get_word(&config.dictionary_path, request.param("word")) {
