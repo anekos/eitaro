@@ -8,14 +8,36 @@
 
   function main() {
     let lastWord;
+    let selectedWord;
+    let selectionDelayTimer;
 
     document.body.addEventListener('mousemove', ev => {
-      const word = extractWordOnCursor(ev.target, ev.clientX, ev.clientY);
-      if (!word || (lastWord == word) || !CharPattern.test(word))
+      if (selectedWord)
         return;
-      fetch(EndPoint + '/word/' + encodeURIComponent(word));
-      lastWord = word;
+
+      let word = extractWordOnCursor(ev.target, ev.clientX, ev.clientY);
+
+      if (word && (lastWord !== word) && CharPattern.test(word))
+        request(word);
     });
+
+    document.addEventListener('selectionchange', function() {
+      if (selectionDelayTimer)
+        clearTimeout(selectionDelayTimer);
+
+      selectionDelayTimer = setTimeout(function() {
+        selectionDelayTimer = null;
+
+        let selection = window.getSelection().toString();
+        selectedWord = selection && selection.trim();
+        request(selectedWord);
+      }, 100);
+    });
+
+    function request(word) {
+      lastWord = word;
+      fetch(EndPoint + '/word/' + encodeURIComponent(word));
+    }
 
     function extractWordOnCursor(element, x, y) {
       const caretPosition = element.ownerDocument.caretPositionFromPoint(x, y);
