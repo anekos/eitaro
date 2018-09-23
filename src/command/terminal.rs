@@ -1,6 +1,6 @@
 
 use std::fs::OpenOptions;
-use std::io::{BufRead, BufReader, Read, stdin};
+use std::io::{BufRead, BufReader};
 use std::io::Write;
 use std::path::Path;
 
@@ -8,19 +8,10 @@ use readline;
 
 use dictionary::Dictionary;
 use errors::AppError;
-use printer::{print_colored_content, print_colored_opt};
-
 use path::get_history_path;
+use screen;
 
 
-
-pub fn color() -> Result<(), AppError> {
-    let mut buffer = String::new();
-    let stdin = stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
-    print_colored_content(&buffer)
-}
 
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
@@ -57,7 +48,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
 fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> Result<(), AppError> {
     for line in s.lines() {
         let found = dic.get(line.trim())?;
-        print_colored_opt(&found, false)?;
+        screen::print_opt(found)?;
     }
     Ok(())
 }

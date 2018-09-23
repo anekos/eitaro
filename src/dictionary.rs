@@ -17,7 +17,7 @@ pub struct Dictionary {
     config: Config,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Entry {
     pub key: String,
     pub content: String,

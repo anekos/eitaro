@@ -1,5 +1,6 @@
 
 #[macro_use] extern crate clap;
+#[macro_use] extern crate easycurses;
 #[macro_use] extern crate failure_derive;
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
@@ -23,7 +24,7 @@ mod dictionary;
 mod errors;
 mod loader;
 mod path;
-mod printer;
+mod screen;
 mod str_utils;
 
 use errors::AppError;
@@ -39,9 +40,6 @@ fn _main() -> Result<(), AppError> {
                     .arg(Arg::with_name("dictionary-path")
                          .help("Dictionary file path")
                          .required(true)))
-        .subcommand(SubCommand::with_name("color")
-                    .alias("c")
-                    .about("Color dictionary text from STDIN"))
         .subcommand(SubCommand::with_name("lookup")
                     .alias("l")
                     .about("Lookup")
@@ -51,10 +49,10 @@ fn _main() -> Result<(), AppError> {
         .subcommand(SubCommand::with_name("server")
                     .alias("s")
                     .about("HTTP Server")
-                    .arg(Arg::with_name("clear")
-                         .help("Clear before print")
+                    .arg(Arg::with_name("curses")
+                         .help("Use curses")
                          .short("c")
-                         .long("clear"))
+                         .long("curses"))
                     .arg(Arg::with_name("ignore")
                          .help("Ignore not found")
                          .short("i")
@@ -74,8 +72,6 @@ fn _main() -> Result<(), AppError> {
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let source_path = matches.value_of("dictionary-path").unwrap(); // Required
         command::builder::build_dictionary(&source_path, &dictionary_path)
-    } else if matches.subcommand_matches("color").is_some() {
-        command::terminal::color()
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)
@@ -84,7 +80,7 @@ fn _main() -> Result<(), AppError> {
         command::http::start_server(
             bind_to,
             HttpConfig {
-                clear_before_print: matches.is_present("clear"),
+                curses: matches.is_present("curses"),
                 dictionary_path,
                 do_print: matches.is_present("print"),
                 ignore_not_found: matches.is_present("ignore"),

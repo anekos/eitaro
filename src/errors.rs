@@ -1,6 +1,6 @@
 
 use std::error::{Error as StdError};
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::fmt::{Display, Error as FmtError, Formatter, Result as FmtResult};
 use std::io::Error as IOError;
 use std::str::Utf8Error;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
@@ -24,6 +24,8 @@ pub enum ErrorKind {
     AppDirs,
     #[fail(display = "Error")]
     Eitaro(&'static str),
+    #[fail(display = "Fomat")]
+    Format,
     #[fail(display = "IO error")]
     Io,
     #[fail(display = "Database error")]
@@ -95,6 +97,7 @@ macro_rules! def_from_error {
 
 
 def_from_error!(AppDirs, AppDirsError);
+def_from_error!(Format, FmtError);
 def_from_error!(Io, IOError);
 def_from_error!(Kv, KvError);
 def_from_error!(Readline, readline::Error);
