@@ -1,15 +1,17 @@
 
 use std::fmt::{Error as FmtError, Write};
+use std::process::exit;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::thread::spawn;
+use std::time::Duration;
 
-use easycurses::{ColorPair, EasyCurses};
+use easycurses::{ColorPair, CursorVisibility, EasyCurses, Input, TimeoutMode};
 
 mod parser;
 
 use dictionary::Entry;
 use self::parser::{parse, Text};
-use errors::{AppError};
+use errors::AppError;
 
 
 
@@ -116,26 +118,53 @@ fn curses_main(rx: Receiver<Option<Vec<Entry>>>) {
         }
     }
 
-    if_let_some!(mut out = EasyCurses::initialize_system(), ());
+    // DO NOT REMOVE THIS BLOCK (EasyCurses should finalize)
+    {
+        if_let_some!(mut out = EasyCurses::initialize_system(), ());
 
-    for entries in rx {
+        out.set_cursor_visibility(CursorVisibility::Invisible);
+        out.set_echo(false);
+        out.set_input_timeout(TimeoutMode::Immediate);
+
         out.clear();
-        if let Some(entries) = entries {
-            for entry in entries {
-                let texts = parse(&entry.content).unwrap(); // FIXME
-                color_key(&mut out, &entry.key);
-                for text in &texts {
-                    color(&mut out, text);
+        out.set_color_pair(colorpair!(Black on White));
+        out.print(concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION")));
+        out.set_color_pair(colorpair!(White on Black));
+        out.print("\n\npress q to quit");
+        out.refresh();
+
+        let timeout = Duration::from_millis(100);
+
+        loop {
+            for entries in rx.recv_timeout(timeout) {
+                out.clear();
+                if let Some(entries) = entries {
+                    for entry in entries {
+                        let texts = parse(&entry.content).unwrap(); // FIXME
+                        color_key(&mut out, &entry.key);
+                        for text in &texts {
+                            color(&mut out, text);
+                        }
+                    }
+                } else {
+                    out.set_color_pair(colorpair!(White on Red));
+                    out.set_bold(true);
+                    out.print("Not Found");
+                    out.set_bold(false);
                 }
+                out.refresh();
             }
-        } else {
-            out.set_color_pair(colorpair!(White on Red));
-            out.set_bold(true);
-            out.print("Not Found");
-            out.set_bold(false);
+
+            if out.get_input() == Some(Input::Character('q')) {
+                break;
+            }
         }
+
+        out.clear();
         out.refresh();
     }
+
+    exit(0);
 }
 
 fn standard_main(rx: Receiver<Option<Vec<Entry>>>) {

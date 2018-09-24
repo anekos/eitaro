@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin};
 use hyper::method::Method;
 use nickel::status::StatusCode;
-use nickel::{Nickel, HttpRouter, Request, Response, MiddlewareResult};
+use nickel::{HttpRouter, MiddlewareResult, Nickel, Request, Response, self};
 use percent_encoding::percent_decode;
 use unicase::UniCase;
 
@@ -32,9 +32,11 @@ pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
 
     let state = State { config, screen };
 
+
     let mut server = Nickel::with_data(state);
     server.get("/ack", on_ack);
     server.get("/word/:word", on_get_word);
+    server.options = nickel::Options::default().output_on_listen(false);
     server.listen(bind_to)?;
     Ok(())
 }
