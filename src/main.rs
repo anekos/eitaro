@@ -61,6 +61,10 @@ fn _main() -> Result<(), AppError> {
                          .help("Print result stdout")
                          .short("p")
                          .long("print"))
+                    .arg(Arg::with_name("kuru")
+                         .help("Kuru Kuru Head")
+                         .short("k")
+                         .long("kuru"))
                     .arg(Arg::with_name("bind-to")
                          .help("host:port to listen")
                          .required(false)));
@@ -84,6 +88,7 @@ fn _main() -> Result<(), AppError> {
                 dictionary_path,
                 do_print: matches.is_present("print"),
                 ignore_not_found: matches.is_present("ignore"),
+                kuru: matches.is_present("kuru"),
             })?;
         Ok(())
     } else {

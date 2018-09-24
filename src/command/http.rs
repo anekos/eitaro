@@ -19,6 +19,7 @@ pub struct Config {
     pub dictionary_path: PathBuf,
     pub do_print: bool,
     pub ignore_not_found: bool,
+    pub kuru: bool,
 }
 
 pub struct State {
@@ -28,7 +29,7 @@ pub struct State {
 
 
 pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
-    let screen = Screen::new(config.curses);
+    let screen = Screen::new(config.curses, config.kuru);
 
     let state = State { config, screen };
 

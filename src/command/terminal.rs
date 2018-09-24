@@ -48,7 +48,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
 fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> Result<(), AppError> {
     for line in s.lines() {
         let found = dic.get(line.trim())?;
-        screen::print_opt(found)?;
+        screen::standard::print_opt(found)?;
     }
     Ok(())
 }
