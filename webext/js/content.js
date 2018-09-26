@@ -76,7 +76,7 @@
     }).catch(error => {
       function onSelectionChange() {
         document.removeEventListener('selectionchange', onSelectionChange);
-        tryToInstall();
+        setTimeout(tryToInstall, 500);
       }
       document.addEventListener('selectionchange', onSelectionChange);
     });
