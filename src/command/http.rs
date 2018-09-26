@@ -85,5 +85,5 @@ fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: Option<&str>) -> Result<O
     let word = word.ok_or(ErrorKind::Eitaro("No `word` paramter"))?;
     let word = percent_decode(word.as_bytes()).decode_utf8()?;
     let mut dic = Dictionary::new(dictionary_path);
-    Ok(dic.get(&word)?)
+    Ok(dic.get_smart(&word)?)
 }

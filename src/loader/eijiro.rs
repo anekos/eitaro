@@ -44,9 +44,12 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         Ok(())
     }
 
-    fn extract_link(writer: &mut DictionaryWriter, key: &str, right: &str) -> Result<(), AppError> {
-        if let (Some(0), Some(r)) = (right.find("＝<→"), right.find('>')) {
-            writer.alias(key, &right[7..r])?;
+    fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
+        if right.starts_with('＝') {
+            right = &right[3..];
+        }
+        if let (true, Some(r)) = (right.starts_with("<→"), right.find('>')) {
+            writer.alias(key, &right[4..r])?;
         }
         Ok(())
     }

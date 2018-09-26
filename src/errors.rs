@@ -8,8 +8,9 @@ use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use app_dirs::AppDirsError;
 use failure::{Context, Fail, Backtrace};
 use kv::{Store as KvStore, Error as KvError};
-use std::sync::PoisonError;
 use readline;
+use regex;
+use std::sync::PoisonError;
 
 
 
@@ -34,6 +35,8 @@ pub enum ErrorKind {
     Lock,
     #[fail(display = "Readline error")]
     Readline,
+    #[fail(display = "Regular expression error")]
+    Regex,
     #[fail(display = "Standard error")]
     Standard(String),
     #[fail(display = "UTF8 conversion error")]
@@ -101,6 +104,7 @@ def_from_error!(Format, FmtError);
 def_from_error!(Io, IOError);
 def_from_error!(Kv, KvError);
 def_from_error!(Readline, readline::Error);
+def_from_error!(Regex, regex::Error);
 def_from_error!(Utf8, Utf8Error);
 
 impl<'a> From<PoisonError<RwLockWriteGuard<'a, KvStore>>> for AppError {

@@ -13,6 +13,7 @@ extern crate nickel;
 extern crate percent_encoding;
 extern crate pom;
 extern crate readline;
+extern crate regex;
 extern crate unicase;
 
 use std::process::exit;

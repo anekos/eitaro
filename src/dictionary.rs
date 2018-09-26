@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use kv::{Bucket, Config, Manager, Txn, Error as KvError};
+use regex::Regex;
 
 use errors::AppError;
 
@@ -41,6 +42,50 @@ impl Dictionary {
         Dictionary { manager, config }
     }
 
+    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+        let mut result = self.get(word)?;
+
+        {
+            let mut mutated = vec![];
+            let chars = ['-', ',', '\'', '_', '=', ' '];
+            for from in &chars {
+                for to in &["-", " ", ""] {
+                    let replaced = word.replace(*from, to);
+                    if replaced != word {
+                        if let Some(result) = self.get(&replaced)? {
+                            mutated.extend_from_slice(&result);
+                        }
+                    }
+                }
+            }
+
+            if !mutated.is_empty() {
+                if result.is_none() {
+                    result = Some(mutated);
+                } else if let Some(content) = result.as_mut() {
+                    content.extend_from_slice(&mutated);
+                }
+            }
+        }
+
+        if result.is_some() {
+            return Ok(result)
+        }
+
+
+        let splitter = Regex::new(r"[-#'=\s]+")?;
+        let mut candidates: Vec<&str> = splitter.split(word).collect();
+        candidates.sort_by(|a, b| a.len().cmp(&b.len()).reverse());
+        for candidate in candidates {
+            let result = self.get(candidate)?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+
+        Ok(None)
+    }
+
     pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.write()?;
@@ -55,7 +100,7 @@ impl Dictionary {
         Ok(())
     }
 
-    pub fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+    fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         fn fix(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
             match result {
                 Ok(found) => Ok(Some(found)),
