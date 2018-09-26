@@ -8,6 +8,7 @@ use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use app_dirs::AppDirsError;
 use failure::{Context, Fail, Backtrace};
 use kv::{Store as KvStore, Error as KvError};
+use lmdb;
 use readline;
 use regex;
 use std::sync::PoisonError;
@@ -23,6 +24,8 @@ pub struct AppError {
 pub enum ErrorKind {
     #[fail(display = "Could not get application directory")]
     AppDirs,
+    #[fail(display = "Database")]
+    Database,
     #[fail(display = "Error")]
     Eitaro(&'static str),
     #[fail(display = "Fomat")]
@@ -100,6 +103,7 @@ macro_rules! def_from_error {
 
 
 def_from_error!(AppDirs, AppDirsError);
+def_from_error!(Database, lmdb::Error);
 def_from_error!(Format, FmtError);
 def_from_error!(Io, IOError);
 def_from_error!(Kv, KvError);

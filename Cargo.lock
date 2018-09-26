@@ -135,6 +135,7 @@ dependencies = [
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "if-let-return 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "kv 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lmdb 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pom 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
