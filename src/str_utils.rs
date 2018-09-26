@@ -27,14 +27,15 @@ pub fn scan_words(s: &str) -> Vec<&str> {
 }
 
 fn is_word_char(c: char) -> bool {
-    c.is_ascii() && c.is_alphanumeric()
+    c.is_ascii() && c.is_alphanumeric() || c == '-'
 }
 
 
 #[cfg(test)]#[test]
 fn test_scan_words() {
     assert_eq!(scan_words(" foo キャット bar 猫"), vec!["foo", "bar"]);
-    assert_eq!(scan_words(" foo、キャット・bar-猫  "), vec!["foo", "bar"]);
+    assert_eq!(scan_words(" foo、キャット・bar=猫  "), vec!["foo", "bar"]);
+    assert_eq!(scan_words(" foo-bar "), vec!["foo-bar"]);
     assert_eq!(scan_words("【変化】動 drives | driving | drove | driven"), vec!["drives", "driving", "drove", "driven"]);
     // TODO
     // drivels | drivel(l)ing | drivel(l)ed
