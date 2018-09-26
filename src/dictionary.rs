@@ -2,6 +2,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use array_tool::vec::Uniq;
 use kv::{Bucket, Config, Manager, Txn, Error as KvError};
 use regex::Regex;
 
@@ -18,7 +19,7 @@ pub struct Dictionary {
     config: Config,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
     pub key: String,
     pub content: String,
@@ -43,6 +44,28 @@ impl Dictionary {
     }
 
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+        let mut result = self.get_similars(word)?;
+        if let Some(result) = result.as_mut() {
+            *result = result.unique();
+        }
+        Ok(result)
+    }
+
+    pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
+        let handle = self.manager.open(self.config.clone())?;
+        let store = handle.write()?;
+        let main_bucket = store.bucket::<String, String>(Some(MAIN_BUCKET))?;
+        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
+        let transaction = store.write_txn()?;
+
+        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
+        f(&mut writer)?;
+        writer.complete()?;
+
+        Ok(())
+    }
+
+    fn get_similars(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         let mut result = self.get(word)?;
 
         {
@@ -72,7 +95,6 @@ impl Dictionary {
             return Ok(result)
         }
 
-
         let splitter = Regex::new(r"[-#'=\s]+")?;
         let mut candidates: Vec<&str> = splitter.split(word).collect();
         candidates.sort_by(|a, b| a.len().cmp(&b.len()).reverse());
@@ -84,20 +106,6 @@ impl Dictionary {
         }
 
         Ok(None)
-    }
-
-    pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
-        let handle = self.manager.open(self.config.clone())?;
-        let store = handle.write()?;
-        let main_bucket = store.bucket::<String, String>(Some(MAIN_BUCKET))?;
-        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
-        let transaction = store.write_txn()?;
-
-        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
-        f(&mut writer)?;
-        writer.complete()?;
-
-        Ok(())
     }
 
     fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {

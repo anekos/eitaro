@@ -49,6 +49,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
             right = &right[3..];
         }
         if let (true, Some(r)) = (right.starts_with("<→"), right.find('>')) {
+            writer.alias(&right[4..r], key)?;
             writer.alias(key, &right[4..r])?;
         }
         Ok(())
@@ -67,14 +68,15 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
             tag = &tag[0.. hyphen];
         }
 
+        extract_link(writer, left, &right)?;
+        extract_aliases(writer, left, &right)?;
+
         let right = if tag.chars().next().map(|it| it.is_digit(10)) == Some(false) {
             format!("{{{}}} {}", tag, right)
         } else {
             right.to_string()
         };
 
-        extract_link(writer, left, &right)?;
-        extract_aliases(writer, left, &right)?;
         writer.insert(left, &right)?;
         return Ok(());
     }

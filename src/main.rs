@@ -4,6 +4,7 @@
 #[macro_use] extern crate failure_derive;
 #[macro_use] extern crate if_let_return;
 extern crate app_dirs;
+extern crate array_tool;
 extern crate colored;
 extern crate encoding;
 extern crate failure;
