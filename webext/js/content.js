@@ -6,7 +6,7 @@
   const SplitPattern = new RegExp('[' + Chars + ']+|[^' + Chars + ']+', 'g');
   const EndPoint = 'http://127.0.0.1:8116'
 
-  function main() {
+  function install() {
     let lastWord;
     let selectedWord;
     let selectionDelayTimer;
@@ -21,7 +21,9 @@
         request(word);
     });
 
-    document.addEventListener('selectionchange', function() {
+    document.addEventListener('selectionchange', onSelectionChange);
+
+    function onSelectionChange() {
       if (selectionDelayTimer)
         clearTimeout(selectionDelayTimer);
 
@@ -32,7 +34,7 @@
         selectedWord = selection && selection.trim();
         request(selectedWord);
       }, 100);
-    });
+    }
 
     function request(word) {
       lastWord = word;
@@ -66,11 +68,22 @@
     }
   }
 
-  fetch(EndPoint + '/ack').then(async resp => {
-    let text = await resp.text();
-    if (text == '␆')
-      main();
-  });
+  function tryToInstall() {
+    fetch(EndPoint + '/ack').then(async resp => {
+      let text = await resp.text();
+      if (text == '␆')
+        install();
+    }).catch(error => {
+      function onSelectionChange() {
+        document.removeEventListener('selectionchange', onSelectionChange);
+        tryToInstall();
+      }
+      document.addEventListener('selectionchange', onSelectionChange);
+    });
+  }
+
+
+  tryToInstall();
 
 })();
 
