@@ -29,15 +29,15 @@ pub struct State {
 
 
 pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
+    let output_on_listen = !config.curses;
+
     let screen = Screen::new(config.curses, config.kuru);
-
     let state = State { config, screen };
-
 
     let mut server = Nickel::with_data(state);
     server.get("/ack", on_ack);
     server.get("/word/:word", on_get_word);
-    server.options = nickel::Options::default().output_on_listen(false);
+    server.options = nickel::Options::default().output_on_listen(output_on_listen);
     server.listen(bind_to)?;
     Ok(())
 }
