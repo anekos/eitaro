@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use array_tool::vec::Uniq;
-use kana;
 use kv::{Bucket, Config, Manager, Txn, Error as KvError};
 use regex::Regex;
 
 use errors::AppError;
+use str_utils::fix_word;
 
 
 
@@ -45,7 +45,7 @@ impl Dictionary {
     }
 
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
-        let word = kana::wide2ascii(word);
+        if_let_some!(word = fix_word(word), Ok(None));
 
         let mut result = self.get_similars(&word)?;
         if let Some(result) = result.as_mut() {
@@ -130,7 +130,6 @@ impl Dictionary {
             Some(result)
         }
 
-        let word = word.to_lowercase();
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.read()?;
         let main_bucket = store.bucket::<String, String>(Some(MAIN_BUCKET))?;
@@ -139,11 +138,11 @@ impl Dictionary {
 
         let mut result = vec![];
 
-        if let Some(content) = fix(transaction.get(&main_bucket, word.clone()))? {
-            result.push(Entry { key: word.clone(), content });
+        if let Some(content) = fix(transaction.get(&main_bucket, word.to_owned()))? {
+            result.push(Entry { key: word.to_owned(), content });
         }
 
-        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.clone()))?, Ok(opt(result)));
+        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
         if alias == word {
             return Ok(opt(result));
         }
@@ -173,7 +172,9 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
-        self.transaction.set(&self.alias_bucket, from.to_lowercase(), to.to_lowercase())?;
+        if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
+            self.transaction.set(&self.alias_bucket, from, to)?;
+        }
         Ok(())
     }
 
