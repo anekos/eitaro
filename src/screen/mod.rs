@@ -15,11 +15,11 @@ pub struct Screen {
 }
 
 impl Screen {
-    pub fn new(curses: bool, kuru: bool) -> Self {
+    pub fn new(curses: bool, kuru: bool, bind_to: String) -> Self {
         let (tx, rx) = sync_channel(0);
 
         if curses {
-            spawn(move || curses::main(rx, kuru));
+            spawn(move || curses::main(rx, kuru, &bind_to));
         } else {
             spawn(|| standard::main(rx));
         }

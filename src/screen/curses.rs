@@ -13,7 +13,7 @@ use screen::parser::{parse, Text};
 const FACES: [&'static str;6] = ["(ﾟДﾟ)" , "( ﾟД)" , "(  ﾟ)" , "(   )" , "(ﾟ  )" , "(Дﾟ )"];
 
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool) {
+pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
     use easycurses::Color::*;
 
     fn color_key(out: &mut EasyCurses, key: &str) {
@@ -64,6 +64,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool) {
         out.set_color_pair(colorpair!(Black on White));
         out.print(concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION")));
         out.set_color_pair(colorpair!(White on Black));
+        out.print(format!("\non {}", bind_to));
         out.print("\n\npress q to quit");
         out.refresh();
 

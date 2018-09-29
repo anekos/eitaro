@@ -31,7 +31,7 @@ pub struct State {
 pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
     let output_on_listen = !config.curses;
 
-    let screen = Screen::new(config.curses, config.kuru);
+    let screen = Screen::new(config.curses, config.kuru, bind_to.to_owned());
     let state = State { config, screen };
 
     let mut server = Nickel::with_data(state);
