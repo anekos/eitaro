@@ -69,16 +69,12 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
     if let (Some(l), Some(r)) = (left.find('{'), left.rfind('}')) {
         let (left, tag) = left.split_at(l);
         let left = left.trim();
-        let mut tag = &tag[1..(r - l)];
-
-        if let Some(hyphen) = tag.find('-') {
-            tag = &tag[0.. hyphen];
-        }
+        let tag = extract_tag_name(&tag[1..(r - l)]);
 
         extract_link(writer, left, &right)?;
         extract_aliases(writer, left, &right)?;
 
-        let right = if tag.chars().next().map(|it| it.is_digit(10)) == Some(false) {
+        let right = if let Some(tag) = tag {
             format!("{{{}}} {}", tag, right)
         } else {
             right.to_string()
@@ -93,4 +89,40 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
     writer.insert(left, right)?;
 
     Ok(())
+}
+
+
+fn extract_tag_name(s: &str) -> Option<&str> {
+    let mut left = 0;
+    let mut in_tag = false;
+    let mut index = 0;
+
+    for c in s.chars() {
+        if in_tag {
+            if !c.is_alphabetic() {
+                return Some(&s[left..index]);
+            }
+        } else {
+            if c.is_alphabetic() {
+                left = index;
+                in_tag = true;
+            }
+        }
+
+        index += c.len_utf8();
+    }
+
+    if in_tag {
+        Some(&s[left..index])
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]#[test]
+fn test_extract_tag_name() {
+    assert_eq!(extract_tag_name("   自動  "), Some("自動"));
+    assert_eq!(extract_tag_name("-自動  "), Some("自動"));
+    assert_eq!(extract_tag_name("1-自動  "), Some("自動"));
+    assert_eq!(extract_tag_name(" 1 "), None);
 }
