@@ -52,12 +52,16 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
     }
 
     fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
-        if right.starts_with('＝') {
-            right = &right[3..];
+        if let Some(l) = right.find("＝<→") {
+            right = &right[l + 7..];
+        } else if let Some(l) = right.find("<→") {
+            right = &right[l + 4..];
+        } else {
+            return Ok(())
         }
-        if let (true, Some(r)) = (right.starts_with("<→"), right.find('>')) {
-            writer.alias(&right[4..r], key)?;
-            writer.alias(key, &right[4..r])?;
+        if let Some(r) = right.find('>') {
+            writer.alias(&right[0..r], key)?;
+            writer.alias(key, &right[0..r])?;
         }
         Ok(())
     }
