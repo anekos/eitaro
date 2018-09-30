@@ -134,8 +134,7 @@ dependencies = [
  "failure_derive 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "if-let-return 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "kv 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lmdb 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kv 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pom 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -266,7 +265,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "kv"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -816,7 +815,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)" = "368cb56b2740ebf4230520e2b90ebb0461e69034d85d1945febd9b3971426db2"
 "checksum idna 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "38f09e0f0b1fb55fdee1f17470ad800da77af5186a1a76c026b679358b7e844e"
 "checksum if-let-return 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0e80aae4aa4e2d330cdc999c0a802f8b7057539cca53d0c4fdf7c13d78727232"
-"checksum kv 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3b14031185853830557b79ad7df1aa5bfde509320f41888d975fb37cb6eb36de"
+"checksum kv 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b0877dfc6997cfa3570d03732c2a77d993ecb76349c0a748d7ab88e0cd303327"
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
 "checksum lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ca488b89a5657b0a2ecd45b95609b3e848cf1755da332a0da46e2b2b1cb371a7"
 "checksum libc 0.2.43 (registry+https://github.com/rust-lang/crates.io-index)" = "76e3a3ef172f1a0b9a9ff0dd1491ae5e6c948b94479a3021819ba7d860c8645d"

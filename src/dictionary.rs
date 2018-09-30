@@ -58,12 +58,8 @@ impl Dictionary {
         let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
         let mut transaction = store.write_txn()?;
 
-        if let Txn::ReadWrite(ref mut txn) = transaction {
-            txn.clear_db(main_bucket.db())?;
-            txn.clear_db(alias_bucket.db())?;
-        } else {
-            panic!("WTF");
-        }
+        transaction.clear_db(&main_bucket)?;
+        transaction.clear_db(&alias_bucket)?;
 
         let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
         f(&mut writer)?;
