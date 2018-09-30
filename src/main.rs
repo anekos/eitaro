@@ -9,6 +9,7 @@ extern crate colored;
 extern crate encoding;
 extern crate failure;
 extern crate hyper;
+extern crate kana;
 extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;

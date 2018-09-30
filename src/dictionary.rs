@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use array_tool::vec::Uniq;
+use kana;
 use kv::{Bucket, Config, Manager, Txn, Error as KvError};
 use regex::Regex;
 
@@ -44,7 +45,9 @@ impl Dictionary {
     }
 
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
-        let mut result = self.get_similars(word)?;
+        let word = kana::wide2ascii(word);
+
+        let mut result = self.get_similars(&word)?;
         if let Some(result) = result.as_mut() {
             *result = result.unique();
         }
