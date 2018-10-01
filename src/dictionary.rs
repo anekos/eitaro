@@ -7,7 +7,7 @@ use kv::{Bucket, Config, Manager, Txn, Error as KvError};
 use regex::Regex;
 
 use errors::AppError;
-use str_utils::fix_word;
+use str_utils::{fix_word, shortened};
 
 
 
@@ -53,11 +53,24 @@ impl Dictionary {
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         if_let_some!(word = fix_word(word), Ok(None));
 
-        let mut result = self.get_similars(&word)?;
-        if let Some(result) = result.as_mut() {
-            *result = result.unique();
+        for word in shortened(&word) {
+            let mut result = self.get_similars(&word)?;
+            if let Some(result) = result.as_mut() {
+                return Ok(Some(result.unique()))
+            }
         }
-        Ok(result)
+
+        let splitter = Regex::new(r"[-#'=\s]+")?;
+        let mut candidates: Vec<&str> = splitter.split(&word).collect();
+        candidates.sort_by(|a, b| a.len().cmp(&b.len()).reverse());
+        for candidate in candidates {
+            let result = self.get(candidate)?;
+            if result.is_some() {
+                return Ok(result);
+            }
+        }
+
+        Ok(None)
     }
 
     pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
@@ -103,21 +116,7 @@ impl Dictionary {
             }
         }
 
-        if result.is_some() {
-            return Ok(result)
-        }
-
-        let splitter = Regex::new(r"[-#'=\s]+")?;
-        let mut candidates: Vec<&str> = splitter.split(word).collect();
-        candidates.sort_by(|a, b| a.len().cmp(&b.len()).reverse());
-        for candidate in candidates {
-            let result = self.get(candidate)?;
-            if result.is_some() {
-                return Ok(result);
-            }
-        }
-
-        Ok(None)
+        Ok(result)
     }
 
     fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
