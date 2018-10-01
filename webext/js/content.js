@@ -54,17 +54,19 @@
 
       let words = text.match(SplitPattern);
       let count = 0;
-      let result;
+      let result = [];
+      let size = 0;
 
-      words.some(word => {
+      words.forEach(word => {
         count += word.length;
-        let found = offset <= count;
-        if (found)
-          result = word;
-        return found;
+        if (offset <= count && size < 5) {
+          result.push(word);
+          if (CharPattern.test(word))
+            size++;
+        }
       });
 
-      return result;
+      return result.join('').replace(/\s+/g, ' ');
     }
   }
 
