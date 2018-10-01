@@ -40,7 +40,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
                     right = &right[0..paren];
                 }
                 for it in scan_words(word_type, right) {
-                    writer.alias(it, key)?;
+                    writer.alias(&it, key)?;
                 }
             }
             Ok(())
