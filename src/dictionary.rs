@@ -28,9 +28,15 @@ pub struct Entry {
 
 pub struct DictionaryWriter<'a> {
     alias_bucket: Bucket<'a, String, String>,
+    alias_buffer: CatBuffer,
     main_bucket: Bucket<'a, String, String>,
-    merge_table: BTreeMap<String, Vec<String>>,
+    main_buffer: CatBuffer,
     transaction: Txn<'a>,
+}
+
+#[derive(Default)]
+struct CatBuffer {
+    buffer: BTreeMap<String, Vec<String>>,
 }
 
 
@@ -142,49 +148,65 @@ impl Dictionary {
             result.push(Entry { key: word.to_owned(), content });
         }
 
-        if_let_some!(alias = fix(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
-        if alias == word {
-            return Ok(opt(result));
+        if_let_some!(aliases = fix(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
+        for alias in aliases.split('\n') {
+            if alias != word {
+                if_let_some!(content = fix(transaction.get(&main_bucket, alias.to_owned()))?, Ok(opt(result)));
+                result.push(Entry { key: alias.to_owned(), content });
+            }
         }
-        if_let_some!(content = fix(transaction.get(&main_bucket, alias.clone()))?, Ok(opt(result)));
-        result.push(Entry { key: alias, content });
 
         Ok(opt(result))
     }
 }
 
+
 impl<'a> DictionaryWriter<'a> {
     fn new(transaction: Txn<'a>, main_bucket: Bucket<'a, String, String>, alias_bucket: Bucket<'a, String, String>) -> Self {
         DictionaryWriter {
             alias_bucket,
+            alias_buffer: CatBuffer::default(),
             main_bucket,
-            merge_table: BTreeMap::default(),
+            main_buffer: CatBuffer::default(),
             transaction,
         }
     }
 
     pub fn insert(&mut self, key: &str, value: &str) -> Result<(), AppError> {
         let key = key.to_lowercase();
-
-        let entries = self.merge_table.entry(key).or_insert_with(|| vec![]);
-        entries.push(value.to_owned());
+        self.main_buffer.insert(key, value.to_owned());
         Ok(())
     }
 
     pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
         if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
-            self.transaction.set(&self.alias_bucket, from, to)?;
+            self.alias_buffer.insert(from, to);
         }
         Ok(())
     }
 
     fn complete(mut self) -> Result<(), AppError> {
-        for (key, mut values) in self.merge_table {
-            values.push("".to_string());
-            self.transaction.set(&self.main_bucket, key, values.join("\n"))?;
-        }
-
+        self.main_buffer.complete(&mut self.transaction, &self.main_bucket, true)?;
+        self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket, false)?;
         self.transaction.commit()?;
+        Ok(())
+    }
+}
+
+
+impl CatBuffer {
+    fn insert(&mut self, key: String, value: String) {
+        let entries = self.buffer.entry(key).or_insert_with(|| vec![]);
+        entries.push(value.to_owned());
+    }
+
+    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>, last_line_break: bool) -> Result<(), AppError> {
+        for (key, mut values) in self.buffer {
+            if last_line_break {
+                values.push("".to_string());
+            }
+            transaction.set(bucket, key, values.join("\n"))?;
+        }
         Ok(())
     }
 }
