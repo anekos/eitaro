@@ -27,8 +27,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
     fn color(out: &mut EasyCurses, text: &Text) {
         use self::Text::*;
 
-        fn write(out: &mut EasyCurses, prefix: &str, text: &str, suffix: &str, color_pair: ColorPair, bold: bool) {
-            out.print(prefix);
+        fn write(out: &mut EasyCurses, text: &str, color_pair: ColorPair, bold: bool) {
             out.set_color_pair(color_pair);
             if bold {
                 out.set_bold(true);
@@ -37,19 +36,17 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
             if bold {
                 out.set_bold(false);
             }
-            out.print(suffix);
         }
 
         match text {
-            Annot(s) => write(out, "", s, " ", colorpair!(Yellow on Black), false),
-            Class(s) => write(out, "", s, " ", colorpair!(Blue on Black), false),
-            Definition(s) => write(out, "", s, "", colorpair!(White on Black), true),
-            Example(s) => write(out, " ", s, " ", colorpair!(Green on Black), false),
-            Information(s) => write(out, " ", s, "", colorpair!(Cyan on Black), false),
-            LineBreak => write(out, "", "\n", "", colorpair!(Black on Black), false),
-            Note(s) => write(out, " ", s, "", colorpair!(White on Black), false),
-            Tag(s) => write(out, "", s, "", colorpair!(Red on Black), false),
-            Word(s) => write(out, "", s, "", colorpair!(Black on Yellow), false),
+            Annot(s) => write(out, s, colorpair!(Yellow on Black), false),
+            Class(s) => write(out, s, colorpair!(Blue on Black), false),
+            Definition(s) => write(out, s, colorpair!(White on Black), true),
+            Example(s) => write(out, s, colorpair!(Green on Black), false),
+            Information(s) => write(out, s, colorpair!(Cyan on Black), false),
+            Note(s) => write(out, s, colorpair!(White on Black), false),
+            Tag(s) => write(out, s, colorpair!(Red on Black), false),
+            Word(s) => write(out, s, colorpair!(Black on Yellow), false),
         }
     }
 
@@ -80,10 +77,18 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 out.clear();
                 if let Some(entries) = entries {
                     for entry in entries {
-                        let texts = parse(&entry.content).unwrap(); // FIXME
                         color_key(&mut out, &entry.key);
-                        for text in &texts {
-                            color(&mut out, text);
+                        let definitions = parse(&entry.content).unwrap(); // FIXME
+                        for (index, definition) in definitions.iter().enumerate() {
+                            if 0 < index {
+                                out.print("\n");
+                            }
+                            for (index, text) in definition.iter().enumerate() {
+                                if 0 < index {
+                                    out.print(" ");
+                                }
+                                color(&mut out, text);
+                            }
                         }
                     }
                 } else {

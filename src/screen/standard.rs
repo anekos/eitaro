@@ -25,13 +25,12 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
         use self::Text::*;
 
         match text {
-            Annot(s) => write!(out, "{} ", s.yellow()),
-            Class(s) => write!(out, "{} ", s.blue()),
+            Annot(s) => write!(out, "{}", s.yellow()),
+            Class(s) => write!(out, "{}", s.blue()),
             Definition(s) => write!(out, "{}", s.white().bold()),
-            Example(s) => write!(out, " {} ", s.green()),
-            Information(s) => write!(out, " {}", s.cyan()),
-            LineBreak => writeln!(out),
-            Note(s) => write!(out, " {}", s),
+            Example(s) => write!(out, "{}", s.green()),
+            Information(s) => write!(out, "{}", s.cyan()),
+            Note(s) => write!(out, "{}", s),
             Tag(s) => write!(out, "{}", s.red().bold()),
             Word(s) => color_key(out, &s),
         }
@@ -41,10 +40,17 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
     if let Some(entries) = entries {
         for entry in entries {
             let mut buffer = "".to_owned();
-            let texts = parse(&entry.content)?;
             color_key(&mut buffer, &entry.key)?;
-            for text in &texts {
-                color(&mut buffer, text)?;
+            for (index, definition) in parse(&entry.content)?.iter().enumerate() {
+                if 0 < index {
+                    buffer.push('\n');
+                }
+                for (index, text) in definition.iter().enumerate() {
+                    if 0 < index {
+                        buffer.push(' ');
+                    }
+                    color(&mut buffer, text)?;
+                }
             }
             print!("{}", buffer);
         }
