@@ -27,10 +27,11 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
         match text {
             Annot(s) => write!(out, "{} ", s.yellow()),
             Class(s) => write!(out, "{} ", s.blue()),
+            Definition(s) => write!(out, "{}", s.white().bold()),
             Example(s) => write!(out, " {} ", s.green()),
+            Information(s) => write!(out, " {}", s.cyan()),
             LineBreak => writeln!(out),
-            Note(s) => write!(out, " {}", s.cyan()),
-            Plain(s) => write!(out, "{}", s.white().bold()),
+            Note(s) => write!(out, " {}", s),
             Tag(s) => write!(out, "{}", s.red().bold()),
             Word(s) => color_key(out, &s),
         }

@@ -8,16 +8,17 @@ use pom::{Parser, TextInput};
 pub enum Text {
     Annot(String),
     Class(String),
+    Definition(String),
     Example(String),
+    Information(String),
     LineBreak,
     Note(String),
-    Plain(String),
     Tag(String),
     Word(String),
 }
 
 
-const SPECIALS: &str = "{}〈〉《》◆■\n";
+const SPECIALS: &str = "{}〈〉《》◆■〔〕\n";
 
 
 pub fn parse(input: &str) -> Result<Vec<Text>, String> {
@@ -26,7 +27,7 @@ pub fn parse(input: &str) -> Result<Vec<Text>, String> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = annot() | class() | example() | tag() | word() | note() | plain() | line_break();
+    let p = annot() | class() | example() | tag() | word() | information() | note() | definition() | line_break();
     p.repeat(0..)
 }
 
@@ -45,7 +46,7 @@ fn example() -> Parser<char, Text> {
     let p2 = sym('・') * none_of(SPECIALS).repeat(1..);
     let p2 = p2.map(|it| Text::Example(v2s(it)));
     let p3 = none_of(SPECIALS).repeat(1..);
-    let p3 = p3.map(|it| Text::Plain(format!("■{}", v2s(it))));
+    let p3 = p3.map(|it| Text::Definition(format!("■{}", v2s(it))));
     p1 * (p2 | p3)
 }
 
@@ -55,13 +56,18 @@ fn line_break() -> Parser<char, Text> {
 }
 
 fn note() -> Parser<char, Text> {
-    let p = sym('◆') * none_of(SPECIALS).repeat(1..);
+    let p = sym('〔') * none_of("〔〕").repeat(1..) - sym('〕');
     p.map(|it| Text::Note(v2s(it)))
 }
 
-fn plain() -> Parser<char, Text> {
+fn information() -> Parser<char, Text> {
+    let p = sym('◆') * none_of(SPECIALS).repeat(1..);
+    p.map(|it| Text::Information(v2s(it)))
+}
+
+fn definition() -> Parser<char, Text> {
     let p = none_of(SPECIALS).repeat(1..);
-    p.map(|it| Text::Plain(v2s(it)))
+    p.map(|it| Text::Definition(v2s(it)))
 }
 
 fn tag() -> Parser<char, Text> {
@@ -87,13 +93,13 @@ fn test_parser() {
         Ok(vec![Text::Tag("foo".to_string())]));
 
     assert_eq!(
-        parse("{foo} plain hoge"),
+        parse("{foo} definition hoge"),
         Ok(vec![
            Text::Tag("foo".to_string()),
-           Text::Plain(" plain hoge".to_string())]));
+           Text::Definition(" definition hoge".to_string())]));
 
     assert_eq!(
         parse("■meow :"),
         Ok(vec![
-           Text::Plain("■meow :".to_string())]));
+           Text::Definition("■meow :".to_string())]));
 }

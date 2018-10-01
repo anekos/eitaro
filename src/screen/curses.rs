@@ -43,10 +43,11 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         match text {
             Annot(s) => write(out, "", s, " ", colorpair!(Yellow on Black), false),
             Class(s) => write(out, "", s, " ", colorpair!(Blue on Black), false),
+            Definition(s) => write(out, "", s, "", colorpair!(White on Black), true),
             Example(s) => write(out, " ", s, " ", colorpair!(Green on Black), false),
+            Information(s) => write(out, " ", s, "", colorpair!(Cyan on Black), false),
             LineBreak => write(out, "", "\n", "", colorpair!(Black on Black), false),
-            Note(s) => write(out, " ", s, "", colorpair!(Cyan on Black), false),
-            Plain(s) => write(out, "", s, "", colorpair!(White on Black), true),
+            Note(s) => write(out, " ", s, "", colorpair!(White on Black), false),
             Tag(s) => write(out, "", s, "", colorpair!(Red on Black), false),
             Word(s) => write(out, "", s, "", colorpair!(Black on Yellow), false),
         }
