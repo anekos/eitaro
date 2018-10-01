@@ -55,7 +55,7 @@ fn get_is_word_char(word_type: WordType) -> fn(char) -> bool {
 }
 
 fn is_word_char_english(c: char) -> bool {
-    c.is_ascii() && c.is_alphanumeric() || c == '-'
+    c.is_ascii() && c.is_alphanumeric() || c == '-' || c == '\''
 }
 
 // FIXME
