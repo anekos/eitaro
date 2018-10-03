@@ -71,6 +71,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         let mut face_col = 0;
         let mut face_back = false;
         let mut rc = (0, 0);
+        let mut bullets = vec![];
 
         loop {
             for entries in rx.recv_timeout(timeout) {
@@ -101,14 +102,34 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 out.refresh();
             }
 
-            if out.get_input() == Some(Input::Character('q')) {
-                break;
+            if let Some(input) = out.get_input() {
+                match input {
+                    Input::Character(' ') if kuru => bullets.push((face_col + 2, 0)),
+                    Input::Character('q') => break,
+                    _ => (),
+                }
             }
 
             // Kuru-Kuru Face
             if kuru {
                 let (row, _col) = rc;
                 let (rows, cols) = out.get_row_col_count();
+
+                if !bullets.is_empty() {
+                    for (bc, br) in bullets.iter_mut() {
+                        out.move_rc(rows - *br - 1, *bc);
+                        out.delete_char();
+                        out.insert_char(' ');
+                        if *br + 1 < rows {
+                            *br += 1;
+                            out.move_rc(rows - *br - 1, *bc);
+                            out.delete_char();
+                            out.insert_char('o');
+                        }
+                    }
+                    bullets.retain(|(_, r)| *r  < rows);
+                }
+
                 if rows <= row + 1 {
                     continue;
                 }
