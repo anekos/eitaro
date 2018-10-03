@@ -1,10 +1,14 @@
-(function() {
+(async function() {
   'use strict';
 
   const Chars = "-a-zA-Z#'";
   const CharPattern = new RegExp('[' + Chars + ']');
   const SplitPattern = new RegExp('[' + Chars + ']+|[^' + Chars + ']+', 'g');
-  const EndPoint = 'http://127.0.0.1:8116'
+
+
+  let values = await browser.storage.local.get();
+  let EndPoint = values.apiEndPoint || 'http://127.0.0.1:8116';
+
 
   function install() {
     let lastWord;
