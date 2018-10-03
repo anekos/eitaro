@@ -47,6 +47,37 @@ pub fn scan_words(word_type: WordType, s: &str) -> Vec<String> {
     result
 }
 
+pub fn shortened(s: &str) -> Vec<&str>  {
+    let mut result = vec![];
+    let mut index = 0;
+    let mut left = 0;
+    let mut in_word = false;
+    let mut first = true;
+
+    for c in s.chars() {
+        if in_word ^ (c != ' ') {
+            in_word = !in_word;
+            if in_word {
+                if first {
+                    left = index;
+                    first = false;
+                }
+            } else if left < index {
+                result.push(&s[left..index]);
+            }
+        }
+
+        index += c.len_utf8();
+    }
+
+    if in_word && left < index {
+        result.push(&s[left..index]);
+    }
+
+    result.reverse();
+    result
+}
+
 fn extract_patterns(s: &str, result: &mut Vec<String>) {
     if let Some(l) = s.find('(') {
         let r = s.find(')').expect("Unmatched parenthesis");
@@ -111,4 +142,43 @@ fn test_patterns() {
         "abdefg".to_owned(),
         "abcdeg".to_owned(),
         "abcdefg".to_owned()]);
+}
+
+#[cfg(test)]#[test]
+fn test_shortens() {
+    assert_eq!(
+        shortened("the cat of hell"),
+        vec![
+        "the cat of hell".to_owned(),
+        "the cat of".to_owned(),
+        "the cat".to_owned(),
+        "the".to_owned()
+        ]);
+
+    assert_eq!(
+        shortened("   the cat of hell"),
+        vec![
+        "the cat of hell".to_owned(),
+        "the cat of".to_owned(),
+        "the cat".to_owned(),
+        "the".to_owned()
+        ]);
+
+    assert_eq!(
+        shortened(" the cat of hell    "),
+        vec![
+        "the cat of hell".to_owned(),
+        "the cat of".to_owned(),
+        "the cat".to_owned(),
+        "the".to_owned()
+        ]);
+
+    assert_eq!(
+        shortened(" the cat   of hell    "),
+        vec![
+        "the cat   of hell".to_owned(),
+        "the cat   of".to_owned(),
+        "the cat".to_owned(),
+        "the".to_owned()
+        ]);
 }
