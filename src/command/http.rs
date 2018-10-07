@@ -28,7 +28,14 @@ pub struct State {
 }
 
 
-pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
+pub fn start_server(bind_to: &str, mut config: Config) -> Result<(), AppError> {
+    if config.kuru {
+        config.curses = true;
+    }
+    if config.curses {
+        config.do_print = true;
+    }
+
     let output_on_listen = !config.curses;
 
     let screen = Screen::new(config.curses, config.kuru, bind_to.to_owned());
