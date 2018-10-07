@@ -176,13 +176,13 @@ impl<'a> DictionaryWriter<'a> {
 
     pub fn insert(&mut self, key: &str, value: &str) -> Result<(), AppError> {
         let key = key.to_lowercase();
-        self.main_buffer.insert(key, value.to_owned());
+        self.main_buffer.insert(key, value);
         Ok(())
     }
 
     pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
         if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
-            self.alias_buffer.insert(from, to);
+            self.alias_buffer.insert(from, &to);
         }
         Ok(())
     }
@@ -197,7 +197,7 @@ impl<'a> DictionaryWriter<'a> {
 
 
 impl CatBuffer {
-    fn insert(&mut self, key: String, value: String) {
+    fn insert(&mut self, key: String, value: &str) {
         let entries = self.buffer.entry(key).or_insert_with(|| vec![]);
         entries.push(value.to_owned());
     }

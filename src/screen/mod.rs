@@ -19,7 +19,7 @@ impl Screen {
         let (tx, rx) = sync_channel(0);
 
         if curses {
-            spawn(move || curses::main(rx, kuru, &bind_to));
+            spawn(move || curses::main(&rx, kuru, &bind_to));
         } else {
             spawn(|| standard::main(rx));
         }

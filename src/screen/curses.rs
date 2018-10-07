@@ -10,10 +10,10 @@ use screen::parser::{parse, Text};
 
 
 
-const FACES: [&'static str;6] = ["(ﾟДﾟ)" , "( ﾟД)" , "(  ﾟ)" , "(   )" , "(ﾟ  )" , "(Дﾟ )"];
+const FACES: [&str;6] = ["(ﾟДﾟ)" , "( ﾟД)" , "(  ﾟ)" , "(   )" , "(ﾟ  )" , "(Дﾟ )"];
 
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
+pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
     use easycurses::Color::*;
 
     fn color_key(out: &mut EasyCurses, key: &str) {
@@ -74,7 +74,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         let mut bullets = vec![];
 
         loop {
-            for entries in rx.recv_timeout(timeout) {
+            while let Ok(entries) = rx.recv_timeout(timeout) {
                 out.clear();
                 if let Some(entries) = entries {
                     for entry in entries {
@@ -116,7 +116,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 let (rows, cols) = out.get_row_col_count();
 
                 if !bullets.is_empty() {
-                    for (bc, br) in bullets.iter_mut() {
+                    for (bc, br) in &mut bullets {
                         out.move_rc(rows - *br - 1, *bc);
                         out.delete_char();
                         out.insert_char(' ');

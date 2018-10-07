@@ -67,10 +67,8 @@ fn on_get_word<'mw>(request: &mut Request<State>, mut response: Response<'mw, St
     let state = &*request.server_data();
     match get_word(&state.config.dictionary_path, request.param("word")) {
         Ok(entries) => {
-            if state.config.do_print {
-                if !state.config.ignore_not_found || entries.is_some() {
-                    state.screen.print_opt(entries.clone());
-                }
+            if state.config.do_print && (!state.config.ignore_not_found || entries.is_some()) {
+                state.screen.print_opt(entries.clone());
             }
             if let Some(entries) = entries {
                 let mut content = vec![];

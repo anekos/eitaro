@@ -106,11 +106,9 @@ fn extract_tag_name(s: &str) -> Option<&str> {
             if !c.is_alphabetic() {
                 return Some(&s[left..index]);
             }
-        } else {
-            if c.is_alphabetic() {
-                left = index;
-                in_tag = true;
-            }
+        } else if c.is_alphabetic() {
+            left = index;
+            in_tag = true;
         }
 
         index += c.len_utf8();

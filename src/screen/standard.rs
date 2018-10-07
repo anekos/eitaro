@@ -18,7 +18,7 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
     use colored::*;
 
     fn color_key(out: &mut String, key: &str) -> Result<(), FmtError> {
-        write!(out, "{}\n", key.black().on_yellow().bold())
+        writeln!(out, "{}", key.black().on_yellow().bold())
     }
 
     fn color(out: &mut String, text: &Text) -> Result<(), FmtError> {
