@@ -144,11 +144,14 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 if cols - 6 < face_col || face_col == 0 {
                     face_back = !face_back;
                 }
-                face_index = if face_back {
-                    if face_index == 0 { FACES.len() - 1 } else { face_index - 1 }
-                } else {
-                    if FACES.len() - 1 <= face_index { 0 } else { face_index + 1 }
-                };
+                {
+                    #![cfg_attr(feature = "cargo-clippy", allow(collapsible_if))]
+                    face_index = if face_back {
+                        if face_index == 0 { FACES.len() - 1 } else { face_index - 1 }
+                    } else {
+                        if FACES.len() - 1 <= face_index { 0 } else { face_index + 1 }
+                    };
+                }
             }
         }
 
