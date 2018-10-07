@@ -103,3 +103,14 @@ augroup END
 
 `webext` 以下は Firefox 用のアドオンです。
 HTTP サーバ機能との連携で Firefox のカーソル下のテキスト(あるいは選択テキスト)を自動で引けます。
+
+
+# シューティング機能
+
+HTTP サーバで `--kuru` フラグを有効にすると、自機が出現し、文字を撃つことができます。
+
+```
+$ eitaro server --kuru
+```
+
+![kuru](kuru-shooting.gif)
