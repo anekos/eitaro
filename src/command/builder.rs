@@ -13,15 +13,19 @@ use loader::{eijiro, Loader};
 
 
 pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(source_path: &T, dictionary_path: &U) -> Result<(), AppError> {
-    eprintln!("Building...");
     let mut buffer = vec![];
     let mut file = File::open(source_path)?;
-    eprintln!("Reading...");
+
+    println!("Reading...");
     let _ = file.read_to_end(&mut buffer)?;
-    eprintln!("Encoding...");
+
+    println!("Encoding...");
     let decoded = WINDOWS_31J.decode(&buffer, Replace).map_err(|err| err.to_string())?;
-    eprintln!("Loading...");
+
+    println!("Loading...");
     let ldr = eijiro::EijiroLoader::default();
-    ldr.load(&decoded, dictionary_path).unwrap();
+    let (_, stat) = ldr.load(&decoded, dictionary_path)?;
+    println!("Finished: {} words, {} aliases", stat.words, stat.aliases);
+
     Ok(())
 }

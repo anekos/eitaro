@@ -34,6 +34,11 @@ pub struct DictionaryWriter<'a> {
     transaction: Txn<'a>,
 }
 
+pub struct Stat {
+    pub aliases: usize,
+    pub words: usize,
+}
+
 #[derive(Default)]
 struct CatBuffer {
     buffer: BTreeMap<String, Vec<String>>,
@@ -73,7 +78,7 @@ impl Dictionary {
         Ok(None)
     }
 
-    pub fn writes<F>(&mut self, mut f: F) -> Result<(), AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
+    pub fn write<F>(&mut self, mut f: F) -> Result<Stat, AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.write()?;
         let main_bucket = store.bucket::<String, String>(Some(MAIN_BUCKET))?;
@@ -85,9 +90,7 @@ impl Dictionary {
 
         let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
         f(&mut writer)?;
-        writer.complete()?;
-
-        Ok(())
+        writer.complete()
     }
 
     fn get_similars(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
@@ -184,11 +187,11 @@ impl<'a> DictionaryWriter<'a> {
         Ok(())
     }
 
-    fn complete(mut self) -> Result<(), AppError> {
-        self.main_buffer.complete(&mut self.transaction, &self.main_bucket, true)?;
-        self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket, false)?;
+    fn complete(mut self) -> Result<Stat, AppError> {
+        let words = self.main_buffer.complete(&mut self.transaction, &self.main_bucket, true)?;
+        let aliases = self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket, false)?;
         self.transaction.commit()?;
-        Ok(())
+        Ok(Stat { aliases, words })
     }
 }
 
@@ -199,13 +202,14 @@ impl CatBuffer {
         entries.push(value.to_owned());
     }
 
-    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>, last_line_break: bool) -> Result<(), AppError> {
+    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>, last_line_break: bool) -> Result<usize, AppError> {
+        let len = self.buffer.len();
         for (key, mut values) in self.buffer {
             if last_line_break {
                 values.push("".to_string());
             }
             transaction.set(bucket, key, values.join("\n"))?;
         }
-        Ok(())
+        Ok(len)
     }
 }

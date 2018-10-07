@@ -1,7 +1,7 @@
 
 use std::path::Path;
 
-use dictionary::{Dictionary, DictionaryWriter};
+use dictionary::{Dictionary, DictionaryWriter, Stat};
 use errors::AppError;
 use loader::Loader;
 use str_utils::{scan_words, WordType};
@@ -13,10 +13,10 @@ pub struct EijiroLoader();
 
 
 impl Loader for EijiroLoader {
-    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<Dictionary, AppError> {
-        let mut result = Dictionary::new(dictionary_path);
+    fn load<T: AsRef<Path>>(&self, source: &str, dictionary_path: &T) -> Result<(Dictionary, Stat), AppError> {
+        let mut dictionary = Dictionary::new(dictionary_path);
 
-        result.writes(move |writer| {
+        let stat = dictionary.write(move |writer| {
             for line in source.lines() {
                 if line.starts_with("■") {
                     load_line(writer, &line[3..])?;
@@ -25,7 +25,7 @@ impl Loader for EijiroLoader {
             Ok(())
         })?;
 
-        Ok(result)
+        Ok((dictionary, stat))
     }
 }
 
