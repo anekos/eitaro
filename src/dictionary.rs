@@ -7,7 +7,7 @@ use kv::{Bucket, Config, Manager, Txn, Error as KvError};
 use regex::Regex;
 
 use errors::AppError;
-use str_utils::{fix_word, shortened};
+use str_utils::{fix_word, shorten, uncase};
 
 
 
@@ -56,17 +56,24 @@ impl Dictionary {
     }
 
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
-        if_let_some!(word = fix_word(word), Ok(None));
+        if_let_some!(fixed = fix_word(word), Ok(None));
 
-        for word in shortened(&word) {
-            let mut result = self.get_similars(&word)?;
+        for shortened in shorten(&fixed) {
+            let mut result = self.get_similars(&shortened)?;
             if let Some(result) = result.as_mut() {
                 return Ok(Some(result.unique()))
             }
         }
 
+        let uncased = uncase(&word);
+        if uncased != word {
+            if let Some(result) = self.get_smart(&uncased)? {
+                return Ok(Some(result))
+            }
+        }
+
         let splitter = Regex::new(r"[-#'=\s]+")?;
-        let mut candidates: Vec<&str> = splitter.split(&word).collect();
+        let mut candidates: Vec<&str> = splitter.split(&fixed).collect();
         candidates.sort_by(|a, b| a.len().cmp(&b.len()).reverse());
         for candidate in candidates {
             let result = self.get(candidate)?;
@@ -98,7 +105,7 @@ impl Dictionary {
 
         {
             let mut mutated = vec![];
-            let chars = ['-', ',', '\'', '_', '=', ' '];
+            let chars = [',', '\'', '=', ' '];
             for from in &chars {
                 for to in &["-", " ", ""] {
                     let replaced = word.replace(*from, to);

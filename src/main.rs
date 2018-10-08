@@ -8,6 +8,7 @@ extern crate array_tool;
 extern crate colored;
 extern crate encoding;
 extern crate failure;
+extern crate heck;
 extern crate hyper;
 extern crate kana;
 extern crate kv;

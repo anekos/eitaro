@@ -1,4 +1,5 @@
 
+use heck::SnakeCase;
 use kana::wide2ascii;
 
 
@@ -47,7 +48,7 @@ pub fn scan_words(word_type: WordType, s: &str) -> Vec<String> {
     result
 }
 
-pub fn shortened(s: &str) -> Vec<&str>  {
+pub fn shorten(s: &str) -> Vec<&str>  {
     let mut result = vec![];
     let mut index = 0;
     let mut left = 0;
@@ -76,6 +77,10 @@ pub fn shortened(s: &str) -> Vec<&str>  {
 
     result.reverse();
     result
+}
+
+pub fn uncase(s: &str) -> String {
+    s.to_snake_case().replace('_', " ")
 }
 
 fn extract_patterns(s: &str, result: &mut Vec<String>) {
