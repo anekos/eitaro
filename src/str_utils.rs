@@ -85,9 +85,12 @@ pub fn uncase(s: &str) -> String {
 
 fn extract_patterns(s: &str, result: &mut Vec<String>) {
     if let Some(l) = s.find('(') {
-        let r = s.find(')').expect("Unmatched parenthesis");
-        extract_patterns(&format!("{}{}", &s[0..l], &s[r+1..]), result);
-        extract_patterns(&format!("{}{}{}", &s[0..l], &s[l+1..r], &s[r+1..]), result);
+        if let Some(r) = s.find(')') {
+            extract_patterns(&format!("{}{}", &s[0..l], &s[r+1..]), result);
+            extract_patterns(&format!("{}{}{}", &s[0..l], &s[l+1..r], &s[r+1..]), result);
+        } else {
+            extract_patterns(&s[0..l].to_owned(), result);
+        }
     } else {
         result.push(s.to_owned());
     }

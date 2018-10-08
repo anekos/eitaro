@@ -32,15 +32,14 @@ impl Loader for EijiroLoader {
 
 fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
     fn extract_aliases(writer: &mut DictionaryWriter, key: &str, right: &str) -> Result<(), AppError> {
-        fn extract(writer: &mut DictionaryWriter, key: &str, mut right: &str, word_type: WordType, pattern: &str) -> Result<(), AppError> {
-            const LEFT_PAREN: char = '【';
+        fn extract(writer: &mut DictionaryWriter, key: &str, right: &str, word_type: WordType, pattern: &str) -> Result<(), AppError> {
             if let Some(found) = right.find(pattern) {
-                right = &right[found + pattern.len()..];
-                if let Some(paren) = right.find(LEFT_PAREN) {
-                    right = &right[0..paren];
-                }
-                for it in scan_words(word_type, right) {
-                    writer.alias(&it, key)?;
+                let right = &right[found + pattern.len()..];
+                let right = read_until_symbols(&right);
+                if !right.is_empty() {
+                    for it in scan_words(word_type, right) {
+                        writer.alias(&it, key)?;
+                    }
                 }
             }
             Ok(())
@@ -48,7 +47,8 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
 
         let right = right.replace('（', "").replace('）', "");
         extract(writer, key, &right, WordType::English, "【変化】")?;
-        extract(writer, key, &right, WordType::Katakana, "【＠】")
+        extract(writer, key, &right, WordType::Katakana, "【＠】")?;
+        extract(writer, key, &right, WordType::English, "【略】")
     }
 
     fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
@@ -121,10 +121,31 @@ fn extract_tag_name(s: &str) -> Option<&str> {
     }
 }
 
+fn read_until_symbols(s: &str) -> &str {
+    const SYMBOLS: &str = "【{〈《◆■〔";
+
+    let mut right = 0;
+
+    for c in s.chars() {
+        if SYMBOLS.find(c).is_some() {
+            break;
+        }
+        right += c.len_utf8();
+    }
+
+    &s[0..right]
+}
+
 #[cfg(test)]#[test]
 fn test_extract_tag_name() {
     assert_eq!(extract_tag_name("   自動  "), Some("自動"));
     assert_eq!(extract_tag_name("-自動  "), Some("自動"));
     assert_eq!(extract_tag_name("1-自動  "), Some("自動"));
     assert_eq!(extract_tag_name(" 1 "), None);
+}
+
+#[cfg(test)]#[test]
+fn test_read_until_symbols() {
+    assert_eq!(read_until_symbols("cat【neko"), "cat");
+    assert_eq!(read_until_symbols("cat◆neko"), "cat");
 }
