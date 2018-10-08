@@ -24,3 +24,8 @@ array_tool = "*"
 lmdb = "*"
 unicode-jp = "*"
 heck = "0.3.0"
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["precommit-hook", "run-cargo-test"]
