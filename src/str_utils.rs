@@ -26,23 +26,27 @@ pub fn scan_words(word_type: WordType, s: &str) -> Vec<String> {
     let mut in_word = false;
     let mut index = 0;
     let mut left = 0;
+    let mut right = 0;
     let is_word_char = get_is_word_char(word_type);
 
     for c in s.chars() {
-        if in_word ^ is_word_char(c) {
+        let space = c == ' ';
+        if in_word ^ (is_word_char(c) || (in_word && space)) {
             in_word = !in_word;
             if in_word {
                 left = index;
-            } else if left < index {
-                extract_patterns(&s[left..index], &mut result);
+            } else if left < right {
+                extract_patterns(&s[left..right], &mut result);
             }
         }
-
         index += c.len_utf8();
+        if in_word && !space {
+            right = index;
+        }
     }
 
-    if in_word && left < index {
-        extract_patterns(&s[left..index], &mut result);
+    if in_word && left < right {
+        extract_patterns(&s[left..right], &mut result);
     }
 
     result
@@ -113,14 +117,17 @@ fn is_word_char_katakana(c: char) -> bool {
 }
 
 
+
 #[cfg(test)]#[test]
 fn test_scan_words() {
     use  self::WordType::*;
 
-    assert_eq!(scan_words(English, " foo キャット bar 猫"), vec!["foo", "bar"]);
+    assert_eq!(scan_words(English, "  foo キャット  bar 猫"), vec!["foo", "bar"]);
+    assert_eq!(scan_words(English, "  foo キャット  bar "), vec!["foo", "bar"]);
     assert_eq!(scan_words(English, " foo、キャット・bar=猫  "), vec!["foo", "bar"]);
     assert_eq!(scan_words(English, " foo-bar "), vec!["foo-bar"]);
     assert_eq!(scan_words(English, "【変化】動 drives | driving | drove | driven"), vec!["drives", "driving", "drove", "driven"]);
+    assert_eq!(scan_words(English, "【変化】動 foo bar | food bar | foolish bar"), vec!["foo bar", "food bar", "foolish bar"]);
 
     assert_eq!(scan_words(Katakana, "アカムパニ、アカンパニ、アコンパニ、"), vec!["アカムパニ", "アカンパニ", "アコンパニ"]);
     assert_eq!(scan_words(Katakana, " foo-bar "), Vec::<&str>::new());
