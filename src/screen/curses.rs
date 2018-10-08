@@ -120,14 +120,16 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                         out.move_rc(rows - *br - 1, *bc);
                         out.delete_char();
                         out.insert_char(' ');
-                        if *br + 1 < rows {
+                        if *br < rows {
                             *br += 1;
+                        }
+                        if *br < rows {
                             out.move_rc(rows - *br - 1, *bc);
                             out.delete_char();
                             out.insert_char('o');
                         }
                     }
-                    bullets.retain(|(_, r)| *r  < rows);
+                    bullets.retain(|(_, r)| *r < rows);
                 }
 
                 if rows <= row + 1 {
