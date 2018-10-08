@@ -152,7 +152,7 @@ fn test_patterns() {
 #[cfg(test)]#[test]
 fn test_shortens() {
     assert_eq!(
-        shortened("the cat of hell"),
+        shorten("the cat of hell"),
         vec![
         "the cat of hell".to_owned(),
         "the cat of".to_owned(),
@@ -161,7 +161,7 @@ fn test_shortens() {
         ]);
 
     assert_eq!(
-        shortened("   the cat of hell"),
+        shorten("   the cat of hell"),
         vec![
         "the cat of hell".to_owned(),
         "the cat of".to_owned(),
@@ -170,7 +170,7 @@ fn test_shortens() {
         ]);
 
     assert_eq!(
-        shortened(" the cat of hell    "),
+        shorten(" the cat of hell    "),
         vec![
         "the cat of hell".to_owned(),
         "the cat of".to_owned(),
@@ -179,7 +179,7 @@ fn test_shortens() {
         ]);
 
     assert_eq!(
-        shortened(" the cat   of hell    "),
+        shorten(" the cat   of hell    "),
         vec![
         "the cat   of hell".to_owned(),
         "the cat   of".to_owned(),
