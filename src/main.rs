@@ -3,8 +3,10 @@
 #[macro_use] extern crate easycurses;
 #[macro_use] extern crate failure_derive;
 #[macro_use] extern crate if_let_return;
+#[macro_use] extern crate serde_derive;
 extern crate app_dirs;
 extern crate array_tool;
+extern crate bincode;
 extern crate colored;
 extern crate encoding;
 extern crate failure;
@@ -17,6 +19,8 @@ extern crate percent_encoding;
 extern crate pom;
 extern crate readline;
 extern crate regex;
+extern crate serde;
+extern crate serde_json;
 extern crate unicase;
 
 use std::process::exit;
@@ -27,6 +31,7 @@ mod command;
 mod dictionary;
 mod errors;
 mod loader;
+mod parser;
 mod path;
 mod screen;
 mod str_utils;

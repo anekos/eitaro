@@ -2,9 +2,8 @@
 use std::fmt::{Error as FmtError, Write};
 use std::sync::mpsc::Receiver;
 
-use dictionary::Entry;
+use dictionary::{Entry, Text};
 use errors::AppError;
-use screen::parser::{parse, Text};
 
 
 
@@ -41,16 +40,14 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
         for entry in entries {
             let mut buffer = "".to_owned();
             color_key(&mut buffer, &entry.key)?;
-            for (index, definition) in parse(&entry.content)?.iter().enumerate() {
-                if 0 < index {
-                    buffer.push('\n');
-                }
-                for (index, text) in definition.iter().enumerate() {
+            for definition in &entry.definitions {
+                for (index, text) in definition.content.iter().enumerate() {
                     if 0 < index {
                         buffer.push(' ');
                     }
                     color(&mut buffer, text)?;
                 }
+                buffer.push('\n');
             }
             print!("{}", buffer);
         }
