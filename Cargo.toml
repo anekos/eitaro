@@ -5,27 +5,36 @@ authors = ["anekos <anekos@snca.net>"]
 
 [dependencies]
 app_dirs = "*"
+array_tool = "*"
+bincode = "*"
 clap = "*"
 colored = "*"
+easycurses = "*"
 encoding = "*"
 failure = "*"
 failure_derive = "*"
+heck = "0.3.0"
 hyper = "0.10.*"
 if-let-return = "*"
-kv = "*"
+lmdb = "*"
 nickel = "*"
 percent-encoding = "*"
 pom = "1.1.*"
 readline = "*"
-unicase = "1.0.*"
-easycurses = "*"
 regex = "*"
-array_tool = "*"
-lmdb = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+unicase = "1.0.*"
 unicode-jp = "*"
-heck = "0.3.0"
+
+[dependencies.kv]
+version = "*"
+features = ["bincode-value"]
 
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
+
+

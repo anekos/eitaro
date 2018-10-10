@@ -5,8 +5,7 @@ use std::time::Duration;
 
 use easycurses::{ColorPair, CursorVisibility, EasyCurses, Input, TimeoutMode};
 
-use dictionary::Entry;
-use screen::parser::{parse, Text};
+use dictionary::{Entry, Text};
 
 
 
@@ -79,12 +78,11 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 if let Some(entries) = entries {
                     for entry in entries {
                         color_key(&mut out, &entry.key);
-                        let definitions = parse(&entry.content).unwrap(); // FIXME
-                        for (index, definition) in definitions.iter().enumerate() {
+                        for (index, definition) in entry.definitions.iter().enumerate() {
                             if 0 < index {
                                 out.print("\n");
                             }
-                            for (index, text) in definition.iter().enumerate() {
+                            for (index, text) in definition.content.iter().enumerate() {
                                 if 0 < index {
                                     out.print(" ");
                                 }

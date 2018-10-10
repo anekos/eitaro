@@ -3,7 +3,6 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use std::thread::spawn;
 
 mod curses;
-mod parser;
 pub mod standard;
 
 use dictionary::Entry;

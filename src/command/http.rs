@@ -74,7 +74,8 @@ fn on_get_word<'mw>(request: &mut Request<State>, mut response: Response<'mw, St
                 let mut content = vec![];
                 for entry in entries {
                     content.push(format!("#{}", entry.key));
-                    content.push(entry.content);
+                    // FIXME
+                    // content.push(entry.content);
                 }
                 response.send(content.join("\n"))
             } else {

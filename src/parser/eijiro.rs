@@ -2,33 +2,14 @@
 use pom::parser::*;
 use pom::{Parser, TextInput};
 
+use dictionary::Text;
 
-
-#[derive(PartialEq, Eq, Debug)]
-pub enum Text {
-    Annot(String),
-    Class(String),
-    Definition(String),
-    Example(String),
-    Information(String),
-    Note(String),
-    Tag(String),
-    Word(String),
-}
 
 
 const SPECIALS: &str = "{}〈〉《》◆■〔〕\n";
 
 
-pub fn parse(input: &str) -> Result<Vec<Vec<Text>>, String> {
-    let mut result = vec![];
-    for it in input.split('\n') {
-        result.push(parse_line(it)?);
-    }
-    Ok(result)
-}
-
-fn parse_line(input: &str) -> Result<Vec<Text>, String> {
+pub fn parse_line(input: &str) -> Result<Vec<Text>, String> {
     let mut input = TextInput::new(input);
     text().parse(&mut input).map_err(|it| it.to_string())
 }

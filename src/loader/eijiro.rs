@@ -4,6 +4,7 @@ use std::path::Path;
 use dictionary::{Dictionary, DictionaryWriter, Stat};
 use errors::AppError;
 use loader::Loader;
+use parser::eijiro::parse_line;
 use str_utils::{scan_words, WordType};
 
 
@@ -84,13 +85,13 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
             right.to_string()
         };
 
-        writer.insert(left, &right)?;
+        writer.insert(left, parse_line(&right)?)?;
         return Ok(());
     }
 
     extract_link(writer, left, &right)?;
     extract_aliases(writer, left, right)?;
-    writer.insert(left, right)?;
+    writer.insert(left, parse_line(&right)?)?;
 
     Ok(())
 }
