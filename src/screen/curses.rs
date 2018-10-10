@@ -39,6 +39,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
 
         match text {
             Annot(s) => write(out, s, colorpair!(Yellow on Black), false),
+            Countability(c) => write(out, &c.to_string(), colorpair!(Yellow on Black), false),
             Class(s) => write(out, s, colorpair!(Blue on Black), false),
             Definition(s) => write(out, s, colorpair!(White on Black), true),
             Example(s) => write(out, s, colorpair!(Green on Black), false),

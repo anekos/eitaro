@@ -27,6 +27,7 @@ pub struct Dictionary {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum Text {
     Annot(String),
+    Countability(char),
     Class(String),
     Definition(String),
     Example(String),
