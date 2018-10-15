@@ -26,6 +26,7 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
         match text {
             Annot(s) => write!(out, "{}", s.yellow()),
             Class(s) => write!(out, "{}", s.blue()),
+            Countability(c) => write!(out, "{}", c.to_string().yellow().bold()),
             Definition(s) => write!(out, "{}", s.white().bold()),
             Example(s) => write!(out, "{}", s.green()),
             Information(s) => write!(out, "{}", s.cyan()),

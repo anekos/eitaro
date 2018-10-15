@@ -3,6 +3,7 @@ use pom::parser::*;
 use pom::{Parser, TextInput};
 
 use dictionary::Text;
+use parser::utils::*;
 
 
 
@@ -61,11 +62,6 @@ fn definition() -> Parser<char, Text> {
 fn tag() -> Parser<char, Text> {
     let p = sym('{') * none_of("{}").repeat(1..) - sym('}');
     p.map(|it| Text::Tag(v2s(it)))
-}
-
-fn v2s(s: Vec<char>) -> String {
-    let s: String = s.into_iter().collect();
-    s.trim().to_owned()
 }
 
 fn word() -> Parser<char, Text> {

@@ -24,6 +24,7 @@ extern crate serde_json;
 extern crate unicase;
 
 use std::process::exit;
+use std::str::FromStr;
 
 use clap::{Arg, SubCommand};
 
@@ -46,6 +47,11 @@ fn _main() -> Result<(), AppError> {
         .subcommand(SubCommand::with_name("build")
                     .alias("b")
                     .about("Build dictionary")
+                    .arg(Arg::with_name("format")
+                         .help("Dictionary format")
+                         .short("f")
+                         .long("format")
+                         .takes_value(true))
                     .arg(Arg::with_name("dictionary-path")
                          .help("Dictionary file path")
                          .required(true)))
@@ -83,8 +89,14 @@ fn _main() -> Result<(), AppError> {
     let dictionary_path = path::get_dictionary_path()?;
 
     if let Some(ref matches) = matches.subcommand_matches("build") {
+        use command::builder::DictionaryFormat;
         let source_path = matches.value_of("dictionary-path").unwrap(); // Required
-        command::builder::build_dictionary(&source_path, &dictionary_path)
+        let dictionary_type = if let Some(format) = matches.value_of("format") {
+            DictionaryFormat::from_str(&format)?
+        } else {
+            DictionaryFormat::Eijiro
+        };
+        command::builder::build_dictionary(&source_path, &dictionary_path, dictionary_type)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)
