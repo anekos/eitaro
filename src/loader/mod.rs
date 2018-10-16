@@ -6,6 +6,7 @@ use errors::AppError;
 
 pub mod eijiro;
 pub mod ejdic;
+pub mod gene;
 
 
 

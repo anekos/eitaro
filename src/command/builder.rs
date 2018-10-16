@@ -6,13 +6,14 @@ use std::path::Path;
 use errors::{AppError, ErrorKind};
 
 use dictionary::Dictionary;
-use loader::{eijiro, ejdic, Loader};
+use loader::{eijiro, ejdic, gene, Loader};
 
 
 #[derive(Clone, Copy)]
 pub enum DictionaryFormat {
     Eijiro,
     Ejdic,
+    Gene,
 }
 
 
@@ -30,6 +31,7 @@ pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(files: &[T], dictionary_
             match format {
                 Eijiro => eijiro::EijiroLoader::default().load(&mut file, &mut writer)?,
                 Ejdic => ejdic::EjdicLoader::default().load(&mut file, &mut writer)?,
+                Gene => gene::GeneLoader::default().load(&mut file, &mut writer)?,
             };
         }
         Ok(())
@@ -46,8 +48,12 @@ fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> 
     let size = file.read(&mut head)?;
     let head = &head[0..size];
 
+    if head.starts_with(b" / This book describes Jpan and its kaisha at the cutting edge.") {
+        return Ok(DictionaryFormat::Gene)
+    }
+
     // 81a1 == ■
-    if 3 <= size && head.starts_with(b"\x81\xa1") {
+    if head.starts_with(b"\x81\xa1") {
         return Ok(DictionaryFormat::Eijiro);
     }
 
