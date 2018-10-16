@@ -130,7 +130,7 @@ fn extract_tag_name(s: &str) -> Option<&str> {
 }
 
 fn read_until_symbols(s: &str) -> &str {
-    const SYMBOLS: &str = "【{〈《◆■〔";
+    const SYMBOLS: &str = "【{〈◆■〔";
 
     let mut right = 0;
 
@@ -156,4 +156,6 @@ fn test_extract_tag_name() {
 fn test_read_until_symbols() {
     assert_eq!(read_until_symbols("cat【neko"), "cat");
     assert_eq!(read_until_symbols("cat◆neko"), "cat");
+    // for 【変化】《複》affairs、【分節】
+    assert_eq!(read_until_symbols("《複》affairs【"), "《複》affairs");
 }

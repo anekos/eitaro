@@ -128,6 +128,7 @@ fn test_scan_words() {
     assert_eq!(scan_words(English, " foo-bar "), vec!["foo-bar"]);
     assert_eq!(scan_words(English, "【変化】動 drives | driving | drove | driven"), vec!["drives", "driving", "drove", "driven"]);
     assert_eq!(scan_words(English, "【変化】動 foo bar | food bar | foolish bar"), vec!["foo bar", "food bar", "foolish bar"]);
+    assert_eq!(scan_words(English, "【変化】 複 affairs、【文節】..."), vec!["affairs"]);
 
     assert_eq!(scan_words(Katakana, "アカムパニ、アカンパニ、アコンパニ、"), vec!["アカムパニ", "アカンパニ", "アコンパニ"]);
     assert_eq!(scan_words(Katakana, " foo-bar "), Vec::<&str>::new());
