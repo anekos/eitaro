@@ -1,8 +1,7 @@
 
 use std::io::Read;
-use std::path::Path;
 
-use dictionary::{Dictionary, DictionaryWriter, Stat};
+use dictionary::DictionaryWriter;
 use errors::AppError;
 use loader::Loader;
 use parser::ejdic::parse_line;
@@ -14,21 +13,16 @@ pub struct EjdicLoader();
 
 
 impl Loader for EjdicLoader {
-    fn load<S: Read, D: AsRef<Path>>(&self, source: &mut S, dictionary_path: &D) -> Result<(Dictionary, Stat), AppError> {
+    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> Result<(), AppError> {
         println!("Reading...");
         let mut buffer = "".to_owned();
         let _ = source.read_to_string(&mut buffer)?;
 
-        let mut dictionary = Dictionary::new(dictionary_path);
+        for line in buffer.lines() {
+            load_line(writer, line)?;
+        }
 
-        let stat = dictionary.write(move |writer| {
-            for line in buffer.lines() {
-                load_line(writer, line)?;
-            }
-            Ok(())
-        })?;
-
-        Ok((dictionary, stat))
+        Ok(())
     }
 }
 

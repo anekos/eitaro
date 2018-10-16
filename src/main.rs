@@ -24,7 +24,6 @@ extern crate serde_json;
 extern crate unicase;
 
 use std::process::exit;
-use std::str::FromStr;
 
 use clap::{Arg, SubCommand};
 
@@ -52,9 +51,9 @@ fn _main() -> Result<(), AppError> {
                          .short("f")
                          .long("format")
                          .takes_value(true))
-                    .arg(Arg::with_name("dictionary-path")
-                         .help("Dictionary file path")
-                         .required(true)))
+                    .arg(Arg::with_name("dictionary-file")
+                         .required(true)
+                         .min_values(1)))
         .subcommand(SubCommand::with_name("lookup")
                     .alias("l")
                     .about("Lookup")
@@ -89,14 +88,8 @@ fn _main() -> Result<(), AppError> {
     let dictionary_path = path::get_dictionary_path()?;
 
     if let Some(ref matches) = matches.subcommand_matches("build") {
-        use command::builder::DictionaryFormat;
-        let source_path = matches.value_of("dictionary-path").unwrap(); // Required
-        let dictionary_type = if let Some(format) = matches.value_of("format") {
-            DictionaryFormat::from_str(&format)?
-        } else {
-            DictionaryFormat::Eijiro
-        };
-        command::builder::build_dictionary(&source_path, &dictionary_path, dictionary_type)
+        let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
+        command::builder::build_dictionary(&files, &dictionary_path)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)

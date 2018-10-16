@@ -1,12 +1,11 @@
 
 use std::io::Read;
-use std::path::Path;
 
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
-use dictionary::{Dictionary, DictionaryWriter, Stat};
+use dictionary::DictionaryWriter;
 use errors::AppError;
 use loader::Loader;
 use parser::eijiro::parse_line;
@@ -19,9 +18,7 @@ pub struct EijiroLoader();
 
 
 impl Loader for EijiroLoader {
-    fn load<S: Read, D: AsRef<Path>>(&self, source: &mut S, dictionary_path: &D) -> Result<(Dictionary, Stat), AppError> {
-        let mut dictionary = Dictionary::new(dictionary_path);
-
+    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> Result<(), AppError> {
         println!("Reading...");
         let mut buffer = vec![];
         let _ = source.read_to_end(&mut buffer)?;
@@ -29,16 +26,14 @@ impl Loader for EijiroLoader {
         println!("Encoding...");
         let source = WINDOWS_31J.decode(&buffer, Replace).map_err(|err| err.to_string())?;
 
-        let stat = dictionary.write(move |writer| {
-            for line in source.lines() {
-                if line.starts_with("■") {
-                    load_line(writer, &line[3..])?;
-                }
+        for line in source.lines() {
+            if line.starts_with("■") {
+                load_line(writer, &line[3..])?;
             }
-            Ok(())
-        })?;
+        }
 
-        Ok((dictionary, stat))
+
+        Ok(())
     }
 }
 
