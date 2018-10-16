@@ -113,11 +113,13 @@ impl Dictionary {
         let store = handle.write()?;
         let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
         let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
-        let mut transaction = store.write_txn()?;
 
+        let mut transaction = store.write_txn()?;
         transaction.clear_db(&main_bucket)?;
         transaction.clear_db(&alias_bucket)?;
+        transaction.commit()?;
 
+        let transaction = store.write_txn()?;
         let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
         f(&mut writer)?;
         writer.complete()
