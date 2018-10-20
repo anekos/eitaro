@@ -79,16 +79,14 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 if let Some(entries) = entries {
                     for entry in entries {
                         color_key(&mut out, &entry.key);
-                        for (index, definition) in entry.definitions.iter().enumerate() {
-                            if 0 < index {
-                                out.print("\n");
-                            }
+                        for definition in &entry.definitions {
                             for (index, text) in definition.content.iter().enumerate() {
                                 if 0 < index {
                                     out.print(" ");
                                 }
                                 color(&mut out, text);
                             }
+                            out.print("\n");
                         }
                     }
                 } else {
