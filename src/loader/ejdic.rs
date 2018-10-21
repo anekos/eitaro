@@ -30,11 +30,13 @@ impl Loader for EjdicLoader {
 fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
     if_let_some!(tab = line.find('\t'), Ok(()));
     let keys = &line[0..tab];
-    let def = &line[tab+1..];
+    let definitions = &line[tab+1..];
 
     let mut keys = keys.split(',');
     let key = keys.next().unwrap();
-    writer.insert(key, parse_line(def)?)?;
+    for definition in definitions.split(" / ") {
+        writer.insert(key, parse_line(definition)?)?;
+    }
     for alias in keys {
         writer.alias(&alias.trim(), key)?;
     }
