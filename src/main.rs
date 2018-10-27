@@ -41,8 +41,20 @@ use command::http::{Config as HttpConfig};
 
 
 
+const DEFAULT_PROMPT: &str = "Eitaro> ";
+
+
 fn _main() -> Result<(), AppError> {
     let app = app_from_crate!()
+        .subcommand(SubCommand::with_name("interactive")
+                    .alias("i")
+                    .alias("shell")
+                    .about("Interactive shell")
+                    .arg(Arg::with_name("prompt")
+                         .help("Prompt text")
+                         .short("p")
+                         .long("prompt")
+                         .takes_value(true)))
         .subcommand(SubCommand::with_name("build")
                     .alias("b")
                     .about("Build dictionary")
@@ -105,8 +117,10 @@ fn _main() -> Result<(), AppError> {
                 kuru: matches.is_present("kuru"),
             })?;
         Ok(())
+    } else if let Some(ref matches) = matches.subcommand_matches("interactive") {
+        command::terminal::shell(&dictionary_path, matches.value_of("prompt").unwrap_or(DEFAULT_PROMPT))
     } else {
-        command::terminal::shell(&dictionary_path)
+        command::terminal::shell(&dictionary_path, DEFAULT_PROMPT)
     }
 }
 

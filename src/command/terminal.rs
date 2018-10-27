@@ -18,14 +18,14 @@ pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), App
     lookup_and_print_lines(&mut dic, word)
 }
 
-pub fn shell<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
+pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> Result<(), AppError> {
     use readline::Error::EndOfFile;
 
     restore_history()?;
 
     let mut dic = Dictionary::new(dictionary_path);
     loop {
-        match readline::readline("Eitaro> ") {
+        match readline::readline(prompt) {
             Ok(ref input) => {
                 let input = input.trim();
                 if input.is_empty() {
