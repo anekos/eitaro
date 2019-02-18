@@ -8,7 +8,6 @@ use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use app_dirs::AppDirsError;
 use failure::{Context, Fail, Backtrace};
 use kv::{Store as KvStore, Error as KvError};
-use readline;
 use regex;
 use std::sync::PoisonError;
 
@@ -103,9 +102,11 @@ def_from_error!(AppDirs, AppDirsError);
 def_from_error!(Format, FmtError);
 def_from_error!(Io, IOError);
 def_from_error!(Kv, KvError);
-def_from_error!(Readline, readline::Error);
 def_from_error!(Regex, regex::Error);
 def_from_error!(Utf8, Utf8Error);
+def_from_error!(Readline, rustyline::error::ReadlineError);
+
+
 
 impl<'a> From<PoisonError<RwLockWriteGuard<'a, KvStore>>> for AppError {
     fn from(_error: PoisonError<RwLockWriteGuard<'a, KvStore>>) -> AppError {

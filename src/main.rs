@@ -1,7 +1,7 @@
 
 #[macro_use] extern crate clap;
 #[macro_use] extern crate easycurses;
-#[macro_use] extern crate failure_derive;
+extern crate failure_derive;
 #[macro_use] extern crate if_let_return;
 #[macro_use] extern crate serde_derive;
 extern crate app_dirs;
@@ -17,8 +17,8 @@ extern crate kv;
 extern crate nickel;
 extern crate percent_encoding;
 extern crate pom;
-extern crate readline;
 extern crate regex;
+extern crate rustyline;
 extern crate serde;
 extern crate serde_json;
 extern crate unicase;
