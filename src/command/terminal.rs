@@ -36,7 +36,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> Result<(), Ap
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
-                println!("");
+                println!();
                 break;
             },
             Err(_) => continue,

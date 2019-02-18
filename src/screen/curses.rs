@@ -52,6 +52,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
 
     // DO NOT REMOVE THIS BLOCK (EasyCurses should finalize)
     {
+        #![allow(clippy::unused_unit)]
         if_let_some!(mut out = EasyCurses::initialize_system(), ());
 
         out.set_cursor_visibility(CursorVisibility::Invisible);
@@ -144,7 +145,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                     face_back = !face_back;
                 }
                 {
-                    #![cfg_attr(feature = "cargo-clippy", allow(collapsible_if))]
+                    #![allow(clippy::collapsible_if)]
                     face_index = if face_back {
                         if face_index == 0 { FACES.len() - 1 } else { face_index - 1 }
                     } else {
