@@ -1,139 +1,76 @@
 
-use std::error::{Error as StdError};
-use std::fmt::{Display, Error as FmtError, Formatter, Result as FmtResult};
-use std::io::Error as IOError;
-use std::str::Utf8Error;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
-
-use app_dirs::AppDirsError;
-use failure::{Context, Fail, Backtrace};
-use kv::{Store as KvStore, Error as KvError};
-use regex;
 use std::sync::PoisonError;
 
+use failure::Fail;
 
 
-#[derive(Debug)]
-pub struct AppError {
-    inner: Context<ErrorKind>,
-}
 
 #[derive(Fail, Debug)]
-pub enum ErrorKind {
-    #[fail(display = "Could not get application directory")]
-    AppDirs,
-    #[fail(display = "Error")]
+pub enum AppError {
+    #[fail(display = "Could not get application directory: {}", 0)]
+    AppDirs(app_dirs::AppDirsError),
+    #[fail(display = "Error: {}", 0)]
     Eitaro(&'static str),
-    #[fail(display = "Fomat")]
-    Format,
-    #[fail(display = "IO error")]
-    Io,
-    #[fail(display = "Database error")]
-    Kv,
+    #[fail(display = "Encoding error: {}", 0)]
+    Encoding(&'static str),
+    #[fail(display = "Format error: {}", 0)]
+    Format(std::fmt::Error),
+    #[fail(display = "IO error: {}", 0)]
+    Io(std::io::Error),
+    #[fail(display = "Database error: {}", 0)]
+    Kv(kv::Error),
     #[fail(display = "Failed to lock")]
     Lock,
-    #[fail(display = "Readline error")]
-    Readline,
-    #[fail(display = "Regular expression error")]
-    Regex,
-    #[fail(display = "Standard error")]
+    #[fail(display = "Parser error: {}", 0)]
+    Pom(pom::Error),
+    #[fail(display = "Readline error: {}", 0)]
+    Readline(rustyline::error::ReadlineError),
+    #[fail(display = "Regular expression error: {}", 0)]
+    Regex(regex::Error),
+    #[fail(display = "Error: {}", 0)]
     Standard(String),
-    #[fail(display = "UTF8 conversion error")]
-    Utf8,
+    #[fail(display = "UTF8 conversion error: {}", 0)]
+    Utf8(std::str::Utf8Error),
 }
 
 
-impl Display for AppError {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        use self::ErrorKind::*;
-
-        match self.inner.get_context() {
-            Standard(error) => writeln!(f, "{}", error),
-            Eitaro(error) => writeln!(f, "{}", error),
-            _ => Display::fmt(&self.inner, f),
-
-        }
-    }
-}
-
-impl Fail for AppError {
-    fn cause(&self) -> Option<&Fail> {
-        self.inner.cause()
-    }
-
-    fn backtrace(&self) -> Option<&Backtrace> {
-        self.inner.backtrace()
-    }
-}
-
-impl From<ErrorKind> for AppError {
-    fn from(kind: ErrorKind) -> Self {
-        AppError {
-            inner: Context::new(kind),
-        }
-    }
-}
-
-impl From<Context<ErrorKind>> for AppError {
-    fn from(inner: Context<ErrorKind>) -> Self {
-        AppError { inner }
-    }
-}
-
-
-macro_rules! def_from_error {
-    ($kind:tt, $type:ty) => {
-        impl From<$type> for AppError {
-            fn from(error: $type) -> AppError {
-                AppError {
-                    inner: error.context(ErrorKind::$kind),
-                }
+macro_rules! define_error {
+    ($source:ty, $kind:ident) => {
+        impl From<$source> for AppError {
+            fn from(error: $source) -> AppError {
+                AppError::$kind(error)
             }
         }
-    };
-
-    ($kind_type:tt) => {
-        def_from_error!($kind_type, $kind_type);
     }
 }
 
 
-def_from_error!(AppDirs, AppDirsError);
-def_from_error!(Format, FmtError);
-def_from_error!(Io, IOError);
-def_from_error!(Kv, KvError);
-def_from_error!(Regex, regex::Error);
-def_from_error!(Utf8, Utf8Error);
-def_from_error!(Readline, rustyline::error::ReadlineError);
+define_error!(app_dirs::AppDirsError, AppDirs);
+define_error!(kv::Error, Kv);
+define_error!(pom::Error, Pom);
+define_error!(regex::Error, Regex);
+define_error!(rustyline::error::ReadlineError, Readline);
+define_error!(std::fmt::Error, Format);
+define_error!(std::io::Error, Io);
+define_error!(std::str::Utf8Error, Utf8);
 
 
 
-impl<'a> From<PoisonError<RwLockWriteGuard<'a, KvStore>>> for AppError {
-    fn from(_error: PoisonError<RwLockWriteGuard<'a, KvStore>>) -> AppError {
-        AppError {
-            inner: Context::from(ErrorKind::Lock),
-        }
+impl<'a> From<PoisonError<RwLockWriteGuard<'a, kv::Store>>> for AppError {
+    fn from(error: PoisonError<RwLockWriteGuard<'a, kv::Store>>) -> AppError {
+        AppError::Standard(format!("{}", error))
     }
 }
 
-impl<'a> From<PoisonError<RwLockReadGuard<'a, KvStore>>> for AppError {
-    fn from(_error: PoisonError<RwLockReadGuard<'a, KvStore>>) -> AppError {
-        AppError {
-            inner: Context::from(ErrorKind::Lock),
-        }
+impl<'a> From<PoisonError<RwLockReadGuard<'a, kv::Store>>> for AppError {
+    fn from(_error: PoisonError<RwLockReadGuard<'a, kv::Store>>) -> AppError {
+        AppError::Lock
     }
 }
 
-impl From<Box<StdError>> for AppError {
-    fn from(error: Box<StdError>) -> AppError {
-        AppError::from(ErrorKind::Standard(error.description().to_owned()))
-    }
-}
-
-impl From<String> for AppError {
-    fn from(error: String) -> AppError {
-        AppError {
-            inner: Context::from(ErrorKind::Standard(error)),
-        }
+impl From<Box<std::error::Error>> for AppError {
+    fn from(error: Box<std::error::Error>) -> AppError {
+        AppError::Standard(error.description().to_owned())
     }
 }

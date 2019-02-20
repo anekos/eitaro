@@ -10,9 +10,9 @@ use crate::parser::utils::*;
 const SPECIALS: &str = "〈〉《》〔〕\n";
 
 
-pub fn parse_line(input: &str) -> Result<Vec<Text>, String> {
+pub fn parse_line(input: &str) -> Result<Vec<Text>, pom::Error> {
     let mut input = TextInput::new(input);
-    text().parse(&mut input).map_err(|it| it.to_string())
+    text().parse(&mut input)
 }
 
 fn with_spaces(p: Parser<char, Text>) -> Parser<char, Text> {

@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use crate::errors::{AppError, ErrorKind};
+use crate::errors::AppError;
 
 use crate::dictionary::Dictionary;
 use crate::loader::{eijiro, ejdic, gene, Loader};
@@ -61,5 +61,5 @@ fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> 
         return Ok(DictionaryFormat::Ejdic);
     }
 
-    Err(ErrorKind::Eitaro("Unknown format"))?
+    Err(AppError::Eitaro("Unknown format"))?
 }

@@ -9,7 +9,7 @@ use percent_encoding::percent_decode;
 use unicase::UniCase;
 
 use crate::dictionary::{Dictionary, Entry};
-use crate::errors::{AppError, ErrorKind};
+use crate::errors::AppError;
 use crate::screen::Screen;
 
 
@@ -88,7 +88,7 @@ fn on_get_word<'mw>(request: &mut Request<State>, mut response: Response<'mw, St
 }
 
 fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: Option<&str>) -> Result<Option<Vec<Entry>>, AppError> {
-    let word = word.ok_or(ErrorKind::Eitaro("No `word` paramter"))?;
+    let word = word.ok_or(AppError::Eitaro("No `word` paramter"))?;
     let word = percent_decode(word.as_bytes()).decode_utf8()?;
     let mut dic = Dictionary::new(dictionary_path);
     Ok(dic.get_smart(&word)?)

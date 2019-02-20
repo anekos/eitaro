@@ -23,7 +23,7 @@ impl Loader for GeneLoader {
         let _ = source.read_to_end(&mut buffer)?;
 
         println!("Encoding...");
-        let source = WINDOWS_31J.decode(&buffer, Replace).map_err(|err| err.to_string())?;
+        let source = WINDOWS_31J.decode(&buffer, Replace).map_err(|_| AppError::Encoding("MS932"))?;
 
         let mut key_buffer = None;
 
