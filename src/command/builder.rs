@@ -3,10 +3,10 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use errors::{AppError, ErrorKind};
+use crate::errors::{AppError, ErrorKind};
 
-use dictionary::Dictionary;
-use loader::{eijiro, ejdic, gene, Loader};
+use crate::dictionary::Dictionary;
+use crate::loader::{eijiro, ejdic, gene, Loader};
 
 
 #[derive(Clone, Copy)]

@@ -4,12 +4,14 @@ use std::path::Path;
 use std::default::Default;
 
 use array_tool::vec::Uniq;
+use if_let_return::if_let_some;
 use kv::bincode::Bincode;
 use kv::{Bucket, Config, Error as KvError, Manager, Serde, Txn, ValueBuf};
 use regex::Regex;
+use serde_derive::{Serialize, Deserialize};
 
-use errors::AppError;
-use str_utils::{fix_word, shorten, uncase};
+use crate::errors::AppError;
+use crate::str_utils::{fix_word, shorten, uncase};
 
 
 
@@ -255,7 +257,7 @@ impl CatBuffer<Definition> {
 impl CatBuffer<String> {
     fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>) -> Result<usize, AppError> {
         let len = self.buffer.len();
-        for (key, mut values) in self.buffer {
+        for (key, values) in self.buffer {
             transaction.set(bucket, key, values.join("\n"))?;
         }
         Ok(len)

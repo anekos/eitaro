@@ -2,8 +2,8 @@
 use std::fmt::{Error as FmtError, Write};
 use std::sync::mpsc::Receiver;
 
-use dictionary::{Entry, Text};
-use errors::AppError;
+use crate::dictionary::{Entry, Text};
+use crate::errors::AppError;
 
 
 

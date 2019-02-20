@@ -8,9 +8,9 @@ use nickel::{HttpRouter, MiddlewareResult, Nickel, Request, Response, self};
 use percent_encoding::percent_decode;
 use unicase::UniCase;
 
-use dictionary::{Dictionary, Entry};
-use errors::{AppError, ErrorKind};
-use screen::Screen;
+use crate::dictionary::{Dictionary, Entry};
+use crate::errors::{AppError, ErrorKind};
+use crate::screen::Screen;
 
 
 

@@ -5,7 +5,7 @@ use std::thread::spawn;
 mod curses;
 pub mod standard;
 
-use dictionary::Entry;
+use crate::dictionary::Entry;
 
 
 

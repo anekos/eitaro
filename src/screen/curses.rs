@@ -3,9 +3,10 @@ use std::process::exit;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
-use easycurses::{ColorPair, CursorVisibility, EasyCurses, Input, TimeoutMode};
+use easycurses::{colorpair, ColorPair, CursorVisibility, EasyCurses, Input, TimeoutMode};
+use if_let_return::if_let_some;
 
-use dictionary::{Entry, Text};
+use crate::dictionary::{Entry, Text};
 
 
 

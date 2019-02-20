@@ -1,32 +1,7 @@
 
-#[macro_use] extern crate clap;
-#[macro_use] extern crate easycurses;
-extern crate failure_derive;
-#[macro_use] extern crate if_let_return;
-#[macro_use] extern crate serde_derive;
-extern crate app_dirs;
-extern crate array_tool;
-extern crate bincode;
-extern crate colored;
-extern crate encoding;
-extern crate failure;
-extern crate heck;
-extern crate hyper;
-extern crate kana;
-extern crate kv;
-extern crate nickel;
-extern crate percent_encoding;
-extern crate pom;
-extern crate regex;
-extern crate rustyline;
-extern crate serde;
-extern crate serde_json;
-extern crate unicase;
-
 use std::process::exit;
 
-use clap::{Arg, SubCommand};
-
+mod args;
 mod command;
 mod dictionary;
 mod errors;
@@ -36,8 +11,8 @@ mod path;
 mod screen;
 mod str_utils;
 
-use errors::AppError;
-use command::http::{Config as HttpConfig};
+use crate::errors::AppError;
+use crate::command::http::{Config as HttpConfig};
 
 
 
@@ -45,55 +20,7 @@ const DEFAULT_PROMPT: &str = "Eitaro> ";
 
 
 fn _main() -> Result<(), AppError> {
-    let app = app_from_crate!()
-        .subcommand(SubCommand::with_name("interactive")
-                    .alias("i")
-                    .alias("shell")
-                    .about("Interactive shell")
-                    .arg(Arg::with_name("prompt")
-                         .help("Prompt text")
-                         .short("p")
-                         .long("prompt")
-                         .takes_value(true)))
-        .subcommand(SubCommand::with_name("build")
-                    .alias("b")
-                    .about("Build dictionary")
-                    .arg(Arg::with_name("format")
-                         .help("Dictionary format")
-                         .short("f")
-                         .long("format")
-                         .takes_value(true))
-                    .arg(Arg::with_name("dictionary-file")
-                         .required(true)
-                         .min_values(1)))
-        .subcommand(SubCommand::with_name("lookup")
-                    .alias("l")
-                    .about("Lookup")
-                    .arg(Arg::with_name("word")
-                         .help("Word")
-                         .required(true)))
-        .subcommand(SubCommand::with_name("server")
-                    .alias("s")
-                    .about("HTTP Server")
-                    .arg(Arg::with_name("curses")
-                         .help("Use curses")
-                         .short("c")
-                         .long("curses"))
-                    .arg(Arg::with_name("ignore")
-                         .help("Ignore not found")
-                         .short("i")
-                         .long("ignore"))
-                    .arg(Arg::with_name("print")
-                         .help("Prints results to stdout")
-                         .short("p")
-                         .long("print"))
-                    .arg(Arg::with_name("kuru")
-                         .help("Enable kuru-kuru head")
-                         .short("k")
-                         .long("kuru"))
-                    .arg(Arg::with_name("bind-to")
-                         .help("host:port to listen")
-                         .required(false)));
+    let app = args::build();
 
     let matches = app.get_matches();
 

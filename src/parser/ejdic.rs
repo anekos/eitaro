@@ -2,8 +2,8 @@
 use pom::parser::*;
 use pom::{Parser, TextInput};
 
-use dictionary::Text;
-use parser::utils::*;
+use crate::dictionary::Text;
+use crate::parser::utils::*;
 
 
 

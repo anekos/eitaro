@@ -5,10 +5,10 @@ use std::path::Path;
 
 use rustyline;
 
-use dictionary::Dictionary;
-use errors::AppError;
-use path::get_history_path;
-use screen;
+use crate::dictionary::Dictionary;
+use crate::errors::AppError;
+use crate::path::get_history_path;
+use crate::screen;
 
 
 

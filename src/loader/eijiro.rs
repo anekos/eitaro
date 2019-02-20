@@ -4,12 +4,13 @@ use std::io::Read;
 use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
+use if_let_return::if_let_some;
 
-use dictionary::DictionaryWriter;
-use errors::AppError;
-use loader::Loader;
-use parser::eijiro::parse_line;
-use str_utils::{scan_words, WordType};
+use crate::dictionary::DictionaryWriter;
+use crate::errors::AppError;
+use crate::loader::Loader;
+use crate::parser::eijiro::parse_line;
+use crate::str_utils::{scan_words, WordType};
 
 
 

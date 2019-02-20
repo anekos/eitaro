@@ -5,10 +5,10 @@ use encoding::DecoderTrap::Replace;
 use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
-use dictionary::DictionaryWriter;
-use errors::AppError;
-use loader::Loader;
-use parser::gene::parse_line;
+use crate::dictionary::DictionaryWriter;
+use crate::errors::AppError;
+use crate::loader::Loader;
+use crate::parser::gene::parse_line;
 
 
 

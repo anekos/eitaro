@@ -1,8 +1,8 @@
 
 use std::io::Read;
 
-use dictionary::{DictionaryWriter};
-use errors::AppError;
+use crate::dictionary::{DictionaryWriter};
+use crate::errors::AppError;
 
 pub mod eijiro;
 pub mod ejdic;
