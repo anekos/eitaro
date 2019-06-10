@@ -1,41 +1,45 @@
 
+use std::io::{stdout, Write as _};
 use std::fmt::{Error as FmtError, Write};
 use std::sync::mpsc::Receiver;
+
+use deco::{dwrite, dwriteln};
 
 use crate::dictionary::{Entry, Text};
 use crate::errors::AppError;
 
 
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>) {
+pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> Result<(), AppError> {
     for entries in rx {
-        print_opt(entries).unwrap();
+        print_opt(entries)?
     }
+    Ok(())
 }
 
 pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
-    use colored::*;
-
     fn color_key(out: &mut String, key: &str) -> Result<(), FmtError> {
-        writeln!(out, "{}", key.black().on_yellow().bold())
+        dwriteln!(out, [black on_yellow bold "{}" !] key)
     }
 
     fn color(out: &mut String, text: &Text) -> Result<(), FmtError> {
         use self::Text::*;
 
         match text {
-            Annot(s) => write!(out, "{}", s.yellow()),
-            Class(s) => write!(out, "{}", s.blue()),
-            Countability(c) => write!(out, "{}", c.to_string().yellow().bold()),
-            Definition(s) => write!(out, "{}", s.white().bold()),
-            Example(s) => write!(out, "{}", s.green()),
-            Information(s) => write!(out, "{}", s.cyan()),
+            Annot(s) => dwrite!(out, [yellow "{}" !] s),
+            Class(s) => dwrite!(out, [blue "{}" !] s),
+            Countability(c) => dwrite!(out, [yellow bold "{}" !] c),
+            Definition(s) => dwrite!(out, [white bold "{}" !] s),
+            Example(s) => dwrite!(out, [green "{}"] s),
+            Information(s) => dwrite!(out, [cyan "{}"] s),
             Note(s) => write!(out, "{}", s),
-            Tag(s) => write!(out, "{}", s.red().bold()),
+            Tag(s) => dwrite!(out, [red bold "{}"] s),
             Word(s) => color_key(out, &s),
         }
     }
 
+    let out = stdout();
+    let mut out = out.lock();
 
     if let Some(entries) = entries {
         for entry in entries {
@@ -50,10 +54,10 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
                 }
                 buffer.push('\n');
             }
-            print!("{}", buffer);
+            write!(out, "{}", buffer)?;
         }
     } else {
-        println!("{}", "Not Found".black().on_red());
+        dwriteln!(out, [black on_red "{}" !] "Not Found")?;
     }
 
     Ok(())
