@@ -32,6 +32,8 @@ pub enum AppError {
     Standard(String),
     #[fail(display = "UTF8 conversion error: {}", 0)]
     Utf8(std::str::Utf8Error),
+    #[fail(display = "Void")]
+    Void,
 }
 
 
@@ -52,7 +54,6 @@ define_error!(pom::Error, Pom);
 define_error!(regex::Error, Regex);
 define_error!(rustyline::error::ReadlineError, Readline);
 define_error!(std::fmt::Error, Format);
-define_error!(std::io::Error, Io);
 define_error!(std::str::Utf8Error, Utf8);
 
 
@@ -72,5 +73,15 @@ impl<'a> From<PoisonError<RwLockReadGuard<'a, kv::Store>>> for AppError {
 impl From<Box<std::error::Error>> for AppError {
     fn from(error: Box<std::error::Error>) -> AppError {
         AppError::Standard(error.description().to_owned())
+    }
+}
+
+impl From<std::io::Error> for AppError {
+    fn from(error: std::io::Error) -> AppError {
+        if error.kind() == std::io::ErrorKind::BrokenPipe {
+            AppError::Void
+        } else {
+            AppError::Io(error)
+        }
     }
 }

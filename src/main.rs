@@ -54,17 +54,21 @@ fn _main() -> Result<(), AppError> {
 fn main() {
     use failure::Fail;
 
-    if let Err(err) = _main() {
-        let mut fail: &Fail = &err;
-        let mut message = err.to_string();
+    match _main() {
+        Err(AppError::Void) | Ok(_) => (),
+        Err(err) => {
+            let mut fail: &Fail = &err;
+            let mut message = err.to_string();
 
-        while let Some(cause) = fail.cause() {
-            message.push_str(&format!("\n\tcaused by: {}", cause));
-            fail = cause;
+            while let Some(cause) = fail.cause() {
+                message.push_str(&format!("\n\tcaused by: {}", cause));
+                fail = cause;
+            }
+
+            eprintln!("Error: {}", message);
+
+            exit(1);
+
         }
-
-        eprintln!("Error: {}", message);
-
-        exit(1);
     }
 }
