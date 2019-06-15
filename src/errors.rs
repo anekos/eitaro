@@ -22,6 +22,8 @@ pub enum AppError {
     Kv(kv::Error),
     #[fail(display = "Failed to lock")]
     Lock,
+    #[fail(display = "Not found")]
+    NotFound,
     #[fail(display = "Parser error: {}", 0)]
     Pom(pom::Error),
     #[fail(display = "Readline error: {}", 0)]

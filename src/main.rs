@@ -32,6 +32,9 @@ fn _main() -> Result<(), AppError> {
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)
+    } else if let Some(ref matches) = matches.subcommand_matches("html") {
+        let word = matches.value_of("word").unwrap(); // Required
+        command::html::lookup(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
         let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
         command::http::start_server(

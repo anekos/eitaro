@@ -1,9 +1,8 @@
 
-use std::io::{stdout, Write as _};
-use std::fmt::{Error as FmtError, Write};
+use std::io::{BufWriter, Error as IOError, stdout, Write};
 use std::sync::mpsc::Receiver;
 
-use deco::{dwrite, dwriteln};
+use deco::{dprintln, dwrite, dwriteln};
 
 use crate::dictionary::{Entry, Text};
 use crate::errors::AppError;
@@ -17,12 +16,12 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> Result<(), AppError> {
     Ok(())
 }
 
-pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
-    fn color_key(out: &mut String, key: &str) -> Result<(), FmtError> {
+pub fn print(entries: Vec<Entry>) -> Result<(), AppError> {
+    fn color_key<W: Write>(out: &mut W, key: &str) -> Result<(), IOError> {
         dwriteln!(out, [black on_yellow bold "{}" !] key)
     }
 
-    fn color(out: &mut String, text: &Text) -> Result<(), FmtError> {
+    fn color<W: Write>(out: &mut W, text: &Text) -> Result<(), IOError> {
         use self::Text::*;
 
         match text {
@@ -39,26 +38,34 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
     }
 
     let out = stdout();
-    let mut out = out.lock();
+    let out = out.lock();
+    let mut out = BufWriter::new(out);
 
-    if let Some(entries) = entries {
-        for entry in entries {
-            let mut buffer = "".to_owned();
-            color_key(&mut buffer, &entry.key)?;
-            for definition in &entry.definitions {
-                for (index, text) in definition.content.iter().enumerate() {
-                    if 0 < index {
-                        buffer.push(' ');
-                    }
-                    color(&mut buffer, text)?;
+    for entry in entries {
+        color_key(&mut out, &entry.key)?;
+        for definition in &entry.definitions {
+            for (index, text) in definition.content.iter().enumerate() {
+                if 0 < index {
+                    write!(out, " ")?;
                 }
-                buffer.push('\n');
+                color(&mut out, text)?;
             }
-            write!(out, "{}", buffer)?;
+            writeln!(out)?;
         }
-    } else {
-        dwriteln!(out, [black on_red "{}" !] "Not Found")?;
     }
 
     Ok(())
+}
+
+pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
+    if let Some(entries) = entries {
+        print(entries)?
+    } else {
+        print_not_found()
+    }
+    Ok(())
+}
+
+pub fn print_not_found() {
+    dprintln!([black on_red "{}" !] "Not Found");
 }
