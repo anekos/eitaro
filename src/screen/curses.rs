@@ -59,6 +59,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         out.set_cursor_visibility(CursorVisibility::Invisible);
         out.set_echo(false);
         out.set_input_timeout(TimeoutMode::Immediate);
+        out.set_scrolling(false);
 
         out.clear();
         out.set_color_pair(colorpair!(Black on White));
@@ -76,6 +77,8 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         let mut bullets = vec![];
 
         loop {
+            let screen_size = termsize::get();
+
             while let Ok(entries) = rx.recv_timeout(timeout) {
                 out.clear();
                 if let Some(entries) = entries {
@@ -99,6 +102,9 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                 }
                 rc = out.get_cursor_rc();
                 out.refresh();
+                if let Some(size) = &screen_size {
+                    out.resize(i32::from(size.rows), i32::from(size.cols) - 5);
+                }
             }
 
             if let Some(input) = out.get_input() {
@@ -111,47 +117,49 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
 
             // Kuru-Kuru Face
             if kuru {
-                let (row, _col) = rc;
-                let (rows, cols) = out.get_row_col_count();
+                if let Some(size) = &screen_size {
+                    let (rows, cols) = (i32::from(size.rows), i32::from(size.cols));
+                    let (row, _col) = rc;
 
-                if !bullets.is_empty() {
-                    for (bc, br) in &mut bullets {
-                        out.move_rc(rows - *br - 1, *bc);
-                        out.delete_char();
-                        out.insert_char(' ');
-                        if *br < rows {
-                            *br += 1;
-                        }
-                        if *br < rows {
+                    if !bullets.is_empty() {
+                        for (bc, br) in &mut bullets {
                             out.move_rc(rows - *br - 1, *bc);
                             out.delete_char();
-                            out.insert_char('o');
+                            out.insert_char(' ');
+                            if *br < rows {
+                                *br += 1;
+                            }
+                            if *br < rows {
+                                out.move_rc(rows - *br - 1, *bc);
+                                out.delete_char();
+                                out.insert_char('o');
+                            }
                         }
+                        bullets.retain(|(_, r)| *r < rows);
                     }
-                    bullets.retain(|(_, r)| *r < rows);
-                }
 
-                if rows <= row + 1 {
-                    continue;
-                }
+                    if rows <= row + 1 {
+                        continue;
+                    }
 
-                out.set_color_pair(colorpair!(White on Black));
-                out.move_rc(rows - 1, face_col);
-                out.delete_line();
-                out.print(FACES[face_index]);
-                out.refresh();
+                    out.set_color_pair(colorpair!(White on Black));
+                    out.move_rc(rows - 1, face_col);
+                    out.delete_line();
+                    out.print(FACES[face_index]);
+                    out.refresh();
 
-                face_col += if face_back { -1 } else { 1 };
-                if cols - 6 < face_col || face_col == 0 {
-                    face_back = !face_back;
-                }
-                {
-                    #![allow(clippy::collapsible_if)]
-                    face_index = if face_back {
-                        if face_index == 0 { FACES.len() - 1 } else { face_index - 1 }
-                    } else {
-                        if FACES.len() - 1 <= face_index { 0 } else { face_index + 1 }
-                    };
+                    face_col += if face_back { -1 } else { 1 };
+                    if cols - 6 < face_col || face_col == 0 {
+                        face_back = !face_back;
+                    }
+                    {
+                        #![allow(clippy::collapsible_if)]
+                        face_index = if face_back {
+                            if face_index == 0 { FACES.len() - 1 } else { face_index - 1 }
+                        } else {
+                            if FACES.len() - 1 <= face_index { 0 } else { face_index + 1 }
+                        };
+                    }
                 }
             }
         }

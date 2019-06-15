@@ -27,6 +27,7 @@ rustyline = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
+termsize = "0.1"
 unicase = "1.0.*"
 unicode-jp = "*"
 
