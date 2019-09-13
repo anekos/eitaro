@@ -9,6 +9,7 @@ use crate::dictionary::Entry;
 
 
 
+#[derive(Clone)]
 pub struct Screen {
     tx: SyncSender<Option<Vec<Entry>>>,
 }

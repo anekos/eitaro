@@ -5,6 +5,9 @@ authors = ["anekos <anekos@snca.net>"]
 edition = "2018"
 
 [dependencies]
+actix = "*"
+actix-cors = "0.1.0"
+actix-web = "1.0"
 app_dirs = "*"
 array_tool = "*"
 askama_escape = "*"
@@ -20,7 +23,6 @@ hyper = "0.10.*"
 if-let-return = "*"
 lmdb = "*"
 nickel = "*"
-percent-encoding = "*"
 pom = "1.1.*"
 regex = "*"
 rustyline = "*"

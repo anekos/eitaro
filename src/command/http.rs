@@ -1,12 +1,9 @@
 
 use std::path::{Path, PathBuf};
 
-use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin};
-use hyper::method::Method;
-use nickel::status::StatusCode;
-use nickel::{HttpRouter, MiddlewareResult, Nickel, Request, Response, self};
-use percent_encoding::percent_decode;
-use unicase::UniCase;
+use actix_cors::Cors;
+use actix_web::{App,  HttpServer, Responder, web, http::header};
+use serde_derive::*;
 
 use crate::dictionary::{Dictionary, Entry};
 use crate::errors::AppError;
@@ -14,6 +11,7 @@ use crate::screen::Screen;
 
 
 
+#[derive(Clone)]
 pub struct Config {
     pub curses: bool,
     pub dictionary_path: PathBuf,
@@ -22,11 +20,16 @@ pub struct Config {
     pub kuru: bool,
 }
 
+#[derive(Clone)]
 pub struct State {
     config: Config,
     pub screen: Screen,
 }
 
+#[derive(Deserialize)]
+pub struct GetWord {
+    word: String,
+}
 
 pub fn start_server(bind_to: &str, mut config: Config) -> Result<(), AppError> {
     if config.kuru {
@@ -36,36 +39,44 @@ pub fn start_server(bind_to: &str, mut config: Config) -> Result<(), AppError> {
         config.do_print = true;
     }
 
-    let output_on_listen = !config.curses;
-
     let screen = Screen::new(config.curses, config.kuru, bind_to.to_owned());
     let state = State { config, screen };
 
-    let mut server = Nickel::with_data(state);
-    server.get("/ack", on_ack);
-    server.get("/word/:word", on_get_word);
-    server.options = nickel::Options::default().output_on_listen(output_on_listen);
-    server.listen(bind_to)?;
+    // let mut server = Nickel::with_data(state);
+    // server.get("/ack", on_ack);
+    // server.get("/word/:word", on_get_word);
+    // server.options = nickel::Options::default().output_on_listen(output_on_listen);
+    // server.listen(bind_to)?;
+
+    let server = HttpServer::new(move || {
+        let state= state.clone();
+        App::new()
+            .wrap(
+                Cors::new()
+                    .allowed_origin("http://localhost:8080")
+                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .max_age(3600),
+            )
+            .route("/ack", web::get().to(on_ack))
+            .route("/word/{word}", web::get().to(on_get_word))
+            .data(state)
+    });
+
+    server
+        .bind(bind_to)?
+        .run()?;
+
     Ok(())
 }
 
-fn set_cors<'mw>(response: &mut Response<'mw, State>) {
-    let headers = response.headers_mut();
-    headers.set(AccessControlAllowOrigin::Any);
-    headers.set(AccessControlAllowMethods(vec![Method::Get]));
-    headers.set(AccessControlAllowHeaders(vec![UniCase("Content-Type".to_owned())]));
+fn on_ack() -> impl Responder {
+    "␆"
 }
 
-fn on_ack<'mw>(_: &mut Request<State>, mut response: Response<'mw, State>) -> MiddlewareResult<'mw, State> {
-    set_cors(&mut response);
-    response.send("␆")
-}
-
-fn on_get_word<'mw>(request: &mut Request<State>, mut response: Response<'mw, State>) -> MiddlewareResult<'mw, State> {
-    set_cors(&mut response);
-
-    let state = &*request.server_data();
-    match get_word(&state.config.dictionary_path, request.param("word")) {
+fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Responder {
+    match get_word(&state.config.dictionary_path, &param.word) {
         Ok(entries) => {
             if state.config.do_print && (!state.config.ignore_not_found || entries.is_some()) {
                 state.screen.print_opt(entries.clone());
@@ -74,22 +85,18 @@ fn on_get_word<'mw>(request: &mut Request<State>, mut response: Response<'mw, St
                 let mut content = vec![];
                 for entry in entries {
                     content.push(format!("#{}", entry.key));
-                    // FIXME
                     // content.push(entry.content);
                 }
-                response.send(content.join("\n"))
+                Some(content.join("\n"))
             } else {
-                response.set(StatusCode::NotFound);
-                response.send("Not found")
+                None
             }
         },
-        Err(err) => response.send(format!("Error: {}", err)),
+        Err(err) => panic!("Not implemented: {}", err)
     }
 }
 
-fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: Option<&str>) -> Result<Option<Vec<Entry>>, AppError> {
-    let word = word.ok_or(AppError::Eitaro("No `word` paramter"))?;
-    let word = percent_decode(word.as_bytes()).decode_utf8()?;
+fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     Ok(dic.get_smart(&word)?)
 }
