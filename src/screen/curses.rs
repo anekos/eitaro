@@ -28,6 +28,9 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         use self::Text::*;
 
         fn write(out: &mut EasyCurses, text: &str, color_pair: ColorPair, bold: bool) {
+            // FIXME WORKAROUND for coredumping bug
+            let text = text.replace("%", "%%");
+
             out.set_color_pair(color_pair);
             if bold {
                 out.set_bold(true);
