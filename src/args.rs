@@ -25,6 +25,7 @@ pub fn build() -> App<'static, 'static> {
                     .arg(Arg::with_name("dictionary-file")
                          .required(true)
                          .min_values(1)))
+        .subcommand(SubCommand::with_name("gui"))
         .subcommand(SubCommand::with_name("lemmatize")
                     .alias("lem")
                     .alias("lm")

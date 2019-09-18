@@ -33,6 +33,10 @@ termsize = "0.1"
 unicase = "1.0.*"
 unicode-jp = "*"
 
+[dependencies.azul]
+git = "https://github.com/maps4print/azul"
+# rev
+
 [dependencies.kv]
 version = "*"
 features = ["bincode-value"]

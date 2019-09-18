@@ -5,14 +5,15 @@ mod args;
 mod command;
 mod dictionary;
 mod errors;
+mod gui;
 mod loader;
 mod parser;
 mod path;
 mod screen;
 mod str_utils;
 
-use crate::errors::AppError;
 use crate::command::http::{Config as HttpConfig};
+use crate::errors::AppError;
 
 
 
@@ -29,6 +30,8 @@ fn _main() -> Result<(), AppError> {
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
         command::builder::build_dictionary(&files, &dictionary_path)
+    } else if let Some(_) = matches.subcommand_matches("gui") {
+        gui::main()
     } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lemmatize(&dictionary_path, word)
