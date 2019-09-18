@@ -29,10 +29,10 @@ pub fn print(entries: Vec<Entry>) -> Result<(), AppError> {
             Class(s) => dwrite!(out, [blue "{}" !] s),
             Countability(c) => dwrite!(out, [yellow bold "{}" !] c),
             Definition(s) => dwrite!(out, [white bold "{}" !] s),
-            Example(s) => dwrite!(out, [green "{}"] s),
-            Information(s) => dwrite!(out, [cyan "{}"] s),
+            Example(s) => dwrite!(out, [green "{}" !] s),
+            Information(s) => dwrite!(out, [cyan "{}" !] s),
             Note(s) => write!(out, "{}", s),
-            Tag(s) => dwrite!(out, [red bold "{}"] s),
+            Tag(s) => dwrite!(out, [red bold "{}" !] s),
             Word(s) => color_key(out, &s),
         }
     }
