@@ -12,6 +12,18 @@ use crate::screen;
 
 
 
+pub fn lemmatize<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
+    let mut dic = Dictionary::new(dictionary_path);
+    if let Some(found) = dic.get_smart(word.trim())? {
+        let mut found = found.iter().map(|it| it.key.as_ref()).collect::<Vec<&str>>();
+        found.sort();
+        for it in found {
+            println!("{}", it);
+        }
+    }
+    Ok(())
+}
+
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     lookup_and_print_lines(&mut dic, word)

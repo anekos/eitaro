@@ -29,6 +29,9 @@ fn _main() -> Result<(), AppError> {
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
         command::builder::build_dictionary(&files, &dictionary_path)
+    } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
+        let word = matches.value_of("word").unwrap(); // Required
+        command::terminal::lemmatize(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lookup(&dictionary_path, word)
