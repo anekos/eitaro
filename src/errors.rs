@@ -22,6 +22,8 @@ pub enum AppError {
     Kv(kv::Error),
     #[fail(display = "Failed to lock")]
     Lock,
+    #[fail(display = "Invalid number: {}", 0)]
+    NumberFormat(std::num::ParseIntError),
     #[fail(display = "Not found")]
     NotFound,
     #[fail(display = "Parser error: {}", 0)]
@@ -56,6 +58,7 @@ define_error!(pom::Error, Pom);
 define_error!(regex::Error, Regex);
 define_error!(rustyline::error::ReadlineError, Readline);
 define_error!(std::fmt::Error, Format);
+define_error!(std::num::ParseIntError, NumberFormat);
 define_error!(std::str::Utf8Error, Utf8);
 
 

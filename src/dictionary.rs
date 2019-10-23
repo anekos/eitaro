@@ -1,7 +1,9 @@
 
-use std::collections::BTreeMap;
-use std::path::Path;
+use std::collections::{BTreeMap, HashMap};
 use std::default::Default;
+use std::fs::OpenOptions;
+use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 
 use array_tool::vec::Uniq;
 use if_let_return::if_let_some;
@@ -17,13 +19,16 @@ use crate::str_utils::{fix_word, shorten, uncase};
 
 const MAIN_BUCKET: &str = "dictionary";
 const ALIAS_BUCKET: &str = "alias";
+const LEVEL_BUCKET: &str = "level";
 
 type DicValue = ValueBuf<Bincode<Entry>>;
+type LevelValue = ValueBuf<Bincode<u8>>;
 
 
 pub struct Dictionary {
-    manager: Manager,
     config: Config,
+    manager: Manager,
+    path: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -54,9 +59,12 @@ pub struct Entry {
 pub struct DictionaryWriter<'a> {
     alias_bucket: Bucket<'a, String, String>,
     alias_buffer: CatBuffer<String>,
+    level_bucket: Bucket<'a, String, LevelValue>,
+    level_buffer: HashMap<u8, Vec<String>>,
     main_bucket: Bucket<'a, String, DicValue>,
     main_buffer: CatBuffer<Definition>,
     transaction: Txn<'a>,
+    path: &'a AsRef<Path>,
 }
 
 pub struct Stat {
@@ -76,8 +84,13 @@ impl Dictionary {
         let mut config = Config::default(dictionary_path);
         config.bucket(MAIN_BUCKET, None);
         config.bucket(ALIAS_BUCKET, None);
+        config.bucket(LEVEL_BUCKET, None);
 
-        Dictionary { manager, config }
+        Dictionary {
+            manager,
+            config,
+            path: dictionary_path.as_ref().to_path_buf()
+        }
     }
 
     pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
@@ -115,6 +128,7 @@ impl Dictionary {
         let store = handle.write()?;
         let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
         let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
+        let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
 
         let mut transaction = store.write_txn()?;
         transaction.clear_db(&main_bucket)?;
@@ -122,7 +136,7 @@ impl Dictionary {
         transaction.commit()?;
 
         let transaction = store.write_txn()?;
-        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket);
+        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket, level_bucket, &self.path);
         f(&mut writer)?;
         writer.complete()
     }
@@ -206,13 +220,16 @@ impl Dictionary {
 
 
 impl<'a> DictionaryWriter<'a> {
-    fn new(transaction: Txn<'a>, main_bucket: Bucket<'a, String, DicValue>, alias_bucket: Bucket<'a, String, String>) -> Self {
+    fn new<T: AsRef<Path>>(transaction: Txn<'a>, main_bucket: Bucket<'a, String, DicValue>, alias_bucket: Bucket<'a, String, String>, level_bucket: Bucket<'a, String, LevelValue>, path: &'a T) -> Self {
         DictionaryWriter {
             alias_bucket,
             alias_buffer: CatBuffer::default(),
+            level_bucket,
+            level_buffer: HashMap::default(),
             main_bucket,
             main_buffer: CatBuffer::default(),
             transaction,
+            path,
         }
     }
 
@@ -228,10 +245,29 @@ impl<'a> DictionaryWriter<'a> {
         Ok(())
     }
 
+    pub fn levelize(&mut self, level: u8, key: &str) -> Result<(), AppError> {
+        self.transaction.set(&self.level_bucket, key.to_owned(), Bincode::to_value_buf(level)?)?;
+        let lb = self.level_buffer.entry(level).or_default();
+        lb.push(key.to_owned());
+        Ok(())
+    }
+
     fn complete(mut self) -> Result<Stat, AppError> {
         let words = self.main_buffer.complete(&mut self.transaction, &self.main_bucket)?;
         let aliases = self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket)?;
         self.transaction.commit()?;
+
+
+        for (level, words) in self.level_buffer {
+            let mut path = self.path.as_ref().to_path_buf();
+            path.push(format!("level-{}", level));
+            let file = OpenOptions::new().write(true).append(false).create(true).open(path)?;
+            let mut file = BufWriter::new(file);
+            for word in words {
+                writeln!(file, "{}", word)?;
+            }
+        }
+
         Ok(Stat { aliases, words })
     }
 }

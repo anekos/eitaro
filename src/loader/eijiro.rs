@@ -76,6 +76,23 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         Ok(())
     }
 
+    fn extract_level(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
+        if let Some(l) = right.find("【レベル】") {
+            right = &right[l + 15..];
+            let mut n = "".to_owned();
+            for c in right.chars() {
+                if c.is_digit(10) {
+                    n.push(c);
+                } else {
+                    break;
+                }
+            }
+            let level: u8 = n.parse()?;
+            writer.levelize(level, key)?;
+        }
+        Ok(())
+    }
+
     if_let_some!(sep = line.find(" : "), Ok(()));
     let (left, right) = line.split_at(sep);
     let right = &right[3..];
@@ -87,6 +104,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
 
         extract_link(writer, left, &right)?;
         extract_aliases(writer, left, &right)?;
+        extract_level(writer, left, &right)?;
 
         let right = if let Some(tag) = tag {
             format!("{{{}}} {}", tag, right)
@@ -95,11 +113,14 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         };
 
         writer.insert(left, parse_line(&right)?)?;
+
         return Ok(());
     }
 
     extract_link(writer, left, &right)?;
     extract_aliases(writer, left, right)?;
+    extract_level(writer, left, &right)?;
+
     writer.insert(left, parse_line(&right)?)?;
 
     Ok(())
