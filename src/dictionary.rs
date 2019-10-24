@@ -93,7 +93,52 @@ impl Dictionary {
         }
     }
 
-    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+   pub fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+        fn fix(result: Result<DicValue, KvError>) -> Result<Option<Entry>, KvError> {
+            match result {
+                Ok(found) => Ok(Some(found.inner()?.to_serde())),
+                Err(KvError::NotFound) => Ok(None),
+                Err(err) => Err(err),
+            }
+        }
+
+        fn fix_alias(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
+            match result {
+                Ok(found) => Ok(Some(found)),
+                Err(KvError::NotFound) => Ok(None),
+                Err(err) => Err(err),
+            }
+        }
+
+        fn opt(result: Vec<Entry>) -> Option<Vec<Entry>> {
+            if result.is_empty() {
+                return None;
+            }
+            Some(result)
+        }
+
+        let handle = self.manager.open(self.config.clone())?;
+        let store = handle.read()?;
+        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
+        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
+        let transaction = store.read_txn()?;
+
+        let mut result = vec![];
+
+        if let Some(entry) = fix(transaction.get(&main_bucket, word.to_owned()))? {
+            result.push(entry);
+        }
+
+        if_let_some!(aliases = fix_alias(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
+        for alias in aliases.split('\n') {
+            if alias != word {
+                if_let_some!(entry = fix(transaction.get(&main_bucket, alias.to_owned()))?, Ok(opt(result)));
+                result.push(entry);
+            }
+        }
+
+        Ok(opt(result))
+    } pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         if_let_some!(fixed = fix_word(word), Ok(None));
 
         for shortened in shorten(&fixed) {
@@ -168,53 +213,6 @@ impl Dictionary {
         }
 
         Ok(result)
-    }
-
-    fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
-        fn fix(result: Result<DicValue, KvError>) -> Result<Option<Entry>, KvError> {
-            match result {
-                Ok(found) => Ok(Some(found.inner()?.to_serde())),
-                Err(KvError::NotFound) => Ok(None),
-                Err(err) => Err(err),
-            }
-        }
-
-        fn fix_alias(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
-            match result {
-                Ok(found) => Ok(Some(found)),
-                Err(KvError::NotFound) => Ok(None),
-                Err(err) => Err(err),
-            }
-        }
-
-        fn opt(result: Vec<Entry>) -> Option<Vec<Entry>> {
-            if result.is_empty() {
-                return None;
-            }
-            Some(result)
-        }
-
-        let handle = self.manager.open(self.config.clone())?;
-        let store = handle.read()?;
-        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
-        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
-        let transaction = store.read_txn()?;
-
-        let mut result = vec![];
-
-        if let Some(entry) = fix(transaction.get(&main_bucket, word.to_owned()))? {
-            result.push(entry);
-        }
-
-        if_let_some!(aliases = fix_alias(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
-        for alias in aliases.split('\n') {
-            if alias != word {
-                if_let_some!(entry = fix(transaction.get(&main_bucket, alias.to_owned()))?, Ok(opt(result)));
-                result.push(entry);
-            }
-        }
-
-        Ok(opt(result))
     }
 }
 
