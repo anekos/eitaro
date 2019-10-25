@@ -64,7 +64,7 @@ pub struct DictionaryWriter<'a> {
     main_bucket: Bucket<'a, String, DicValue>,
     main_buffer: CatBuffer<Definition>,
     transaction: Txn<'a>,
-    path: &'a AsRef<Path>,
+    path: &'a dyn AsRef<Path>,
 }
 
 pub struct Stat {

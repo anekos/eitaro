@@ -65,7 +65,7 @@ fn main() {
     match _main() {
         Err(AppError::Void) | Ok(_) => (),
         Err(err) => {
-            let mut fail: &Fail = &err;
+            let mut fail: &dyn Fail = &err;
             let mut message = err.to_string();
 
             while let Some(cause) = fail.cause() {

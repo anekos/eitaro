@@ -78,8 +78,8 @@ impl<'a> From<PoisonError<RwLockReadGuard<'a, kv::Store>>> for AppError {
     }
 }
 
-impl From<Box<std::error::Error>> for AppError {
-    fn from(error: Box<std::error::Error>) -> AppError {
+impl From<Box<dyn std::error::Error>> for AppError {
+    fn from(error: Box<dyn std::error::Error>) -> AppError {
         AppError::Standard(error.description().to_owned())
     }
 }
