@@ -61,5 +61,5 @@ fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> 
         return Ok(DictionaryFormat::Ejdic);
     }
 
-    Err(AppError::Eitaro("Unknown format"))?
+    Err(AppError::Eitaro("Unknown format"))
 }
