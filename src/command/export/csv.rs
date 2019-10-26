@@ -50,6 +50,9 @@ fn read_level<T: AsRef<Path>>(dic: &mut Dictionary, dictionary_path: &T, level: 
                         use crate::dictionary::Text::*;
 
                         if let Definition(s) = &t {
+                            if !buf.is_empty() {
+                                buf.push(' ');
+                            }
                             buf.push_str(s);
                             if MAX_LENGTH < buf.len() {
                                 break 'outer;
