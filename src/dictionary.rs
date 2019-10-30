@@ -138,7 +138,9 @@ impl Dictionary {
         }
 
         Ok(opt(result))
-    } pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+   }
+
+   pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         if_let_some!(fixed = fix_word(word), Ok(None));
 
         for shortened in shorten(&fixed) {
