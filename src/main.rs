@@ -29,8 +29,9 @@ fn _main() -> AppResultU {
     if let Some(ref matches) = matches.subcommand_matches("build") {
         let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
         command::builder::build_dictionary(&files, &dictionary_path)
-    } else if matches.subcommand_matches("export").is_some() {
-        command::export::export(&dictionary_path)
+    } else if let Some(ref matches) = matches.subcommand_matches("export") {
+        let as_text = matches.is_present("as-text");
+        command::export::export(&dictionary_path, as_text)
     } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
         let word = matches.value_of("word").unwrap(); // Required
         command::terminal::lemmatize(&dictionary_path, word)

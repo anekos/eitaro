@@ -170,6 +170,13 @@ impl Dictionary {
         Ok(None)
     }
 
+    pub fn lemmatize(&mut self, word: &str) -> AppResult<Option<Vec<String>>> {
+        if_let_some!(found = self.get_smart(word.trim())?, Ok(None));
+        let mut found = found.iter().map(|it| it.key.clone()).collect::<Vec<String>>();
+        found.sort_by(|a, b| a.len().cmp(&b.len()));
+        Ok(Some(found))
+    }
+
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.write()?;
