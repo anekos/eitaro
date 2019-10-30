@@ -11,7 +11,7 @@ mod path;
 mod screen;
 mod str_utils;
 
-use crate::errors::AppError;
+use crate::errors::{AppError, AppResultU};
 use crate::command::http::{Config as HttpConfig};
 
 
@@ -19,7 +19,7 @@ use crate::command::http::{Config as HttpConfig};
 const DEFAULT_PROMPT: &str = "Eitaro> ";
 
 
-fn _main() -> Result<(), AppError> {
+fn _main() -> AppResultU {
     let app = args::build();
 
     let matches = app.get_matches();

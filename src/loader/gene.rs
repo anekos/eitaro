@@ -6,7 +6,7 @@ use encoding::Encoding;
 use encoding::all::WINDOWS_31J;
 
 use crate::dictionary::DictionaryWriter;
-use crate::errors::AppError;
+use crate::errors::{AppError, AppResultU};
 use crate::loader::Loader;
 use crate::parser::gene::parse_line;
 
@@ -17,7 +17,7 @@ pub struct GeneLoader();
 
 
 impl Loader for GeneLoader {
-    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> Result<(), AppError> {
+    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
         println!("Reading...");
         let mut buffer = vec![];
         let _ = source.read_to_end(&mut buffer)?;

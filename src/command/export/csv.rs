@@ -2,15 +2,16 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, stdout, Stdout};
 use std::path::Path;
 
-use crate::errors::AppError;
+use crate::errors::AppResultU;
 use crate::dictionary::Dictionary;
+use super::Exporter;
 
 
 
 const MAX_LENGTH: usize = 500;
 
 
-pub fn export<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
+pub fn export<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
 
     let out = stdout();
@@ -27,7 +28,7 @@ pub fn export<T: AsRef<Path>>(dictionary_path: &T) -> Result<(), AppError> {
 }
 
 
-fn read_level<T: AsRef<Path>>(dic: &mut Dictionary, dictionary_path: &T, level: u8, out: &mut csv::Writer<BufWriter<Stdout>>) -> Result<(), AppError> {
+fn read_level<T: AsRef<Path>>(dic: &mut Dictionary, dictionary_path: &T, level: u8, out: &mut csv::Writer<BufWriter<Stdout>>) -> AppResultU {
     let mut path = dictionary_path.as_ref().to_path_buf();
     path.push(format!("level-{}", level));
 

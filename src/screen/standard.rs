@@ -5,18 +5,18 @@ use std::sync::mpsc::Receiver;
 use deco::{dprintln, dwrite, dwriteln};
 
 use crate::dictionary::{Entry, Text};
-use crate::errors::AppError;
+use crate::errors::AppResultU;
 
 
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> Result<(), AppError> {
+pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> AppResultU {
     for entries in rx {
         print_opt(entries)?
     }
     Ok(())
 }
 
-pub fn print(entries: Vec<Entry>) -> Result<(), AppError> {
+pub fn print(entries: Vec<Entry>) -> AppResultU {
     fn color_key<W: Write>(out: &mut W, key: &str) -> Result<(), IOError> {
         dwriteln!(out, [black on_yellow bold "{}" !] key)
     }
@@ -57,7 +57,7 @@ pub fn print(entries: Vec<Entry>) -> Result<(), AppError> {
     Ok(())
 }
 
-pub fn print_opt(entries: Option<Vec<Entry>>) -> Result<(), AppError> {
+pub fn print_opt(entries: Option<Vec<Entry>>) -> AppResultU {
     if let Some(entries) = entries {
         print(entries)?
     } else {

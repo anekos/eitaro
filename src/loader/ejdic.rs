@@ -4,7 +4,7 @@ use std::io::Read;
 use if_let_return::if_let_some;
 
 use crate::dictionary::DictionaryWriter;
-use crate::errors::AppError;
+use crate::errors::AppResultU;
 use crate::loader::Loader;
 use crate::parser::ejdic::parse_line;
 
@@ -15,7 +15,7 @@ pub struct EjdicLoader();
 
 
 impl Loader for EjdicLoader {
-    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> Result<(), AppError> {
+    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
         println!("Reading...");
         let mut buffer = "".to_owned();
         let _ = source.read_to_string(&mut buffer)?;
@@ -29,7 +29,7 @@ impl Loader for EjdicLoader {
 }
 
 
-fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
+fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
     if_let_some!(tab = line.find('\t'), Ok(()));
     let keys = &line[0..tab];
     let definitions = &line[tab+1..];

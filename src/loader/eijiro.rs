@@ -7,7 +7,7 @@ use encoding::all::WINDOWS_31J;
 use if_let_return::if_let_some;
 
 use crate::dictionary::DictionaryWriter;
-use crate::errors::AppError;
+use crate::errors::{AppError, AppResultU};
 use crate::loader::Loader;
 use crate::parser::eijiro::parse_line;
 use crate::str_utils::{scan_words, WordType};
@@ -19,7 +19,7 @@ pub struct EijiroLoader();
 
 
 impl Loader for EijiroLoader {
-    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> Result<(), AppError> {
+    fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
         println!("Reading...");
         let mut buffer = vec![];
         let _ = source.read_to_end(&mut buffer)?;
@@ -39,9 +39,9 @@ impl Loader for EijiroLoader {
 }
 
 
-fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> {
-    fn extract_aliases(writer: &mut DictionaryWriter, key: &str, right: &str) -> Result<(), AppError> {
-        fn extract(writer: &mut DictionaryWriter, key: &str, right: &str, word_type: WordType, pattern: &str) -> Result<(), AppError> {
+fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
+    fn extract_aliases(writer: &mut DictionaryWriter, key: &str, right: &str) -> AppResultU {
+        fn extract(writer: &mut DictionaryWriter, key: &str, right: &str, word_type: WordType, pattern: &str) -> AppResultU {
             if let Some(found) = right.find(pattern) {
                 let right = &right[found + pattern.len()..];
                 let right = read_until_symbols(&right);
@@ -61,7 +61,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         extract(writer, key, &right, WordType::English, "【略】")
     }
 
-    fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
+    fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> AppResultU {
         if let Some(l) = right.find("＝<→") {
             right = &right[l + 7..];
         } else if let Some(l) = right.find("<→") {
@@ -76,7 +76,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> Result<(), AppError> 
         Ok(())
     }
 
-    fn extract_level(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> Result<(), AppError> {
+    fn extract_level(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> AppResultU {
         if let Some(l) = right.find("【レベル】") {
             right = &right[l + 15..];
             let mut n = "".to_owned();

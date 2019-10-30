@@ -12,7 +12,7 @@ use kv::{Bucket, Config, Error as KvError, Manager, Serde, Txn, ValueBuf};
 use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
 
-use crate::errors::AppError;
+use crate::errors::{AppError, AppResult, AppResultU};
 use crate::str_utils::{fix_word, shorten, uncase};
 
 
@@ -93,7 +93,7 @@ impl Dictionary {
         }
     }
 
-   pub fn get(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+   pub fn get(&mut self, word: &str) -> AppResult<Option<Vec<Entry>>> {
         fn fix(result: Result<DicValue, KvError>) -> Result<Option<Entry>, KvError> {
             match result {
                 Ok(found) => Ok(Some(found.inner()?.to_serde())),
@@ -168,7 +168,7 @@ impl Dictionary {
         Ok(None)
     }
 
-    pub fn write<F>(&mut self, mut f: F) -> Result<Stat, AppError> where F: FnMut(&mut DictionaryWriter) -> Result<(), AppError> {
+    pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.write()?;
         let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
@@ -186,7 +186,7 @@ impl Dictionary {
         writer.complete()
     }
 
-    fn get_similars(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+    fn get_similars(&mut self, word: &str) -> AppResult<Option<Vec<Entry>>> {
         let mut result = self.get(word)?;
 
         {
@@ -231,26 +231,26 @@ impl<'a> DictionaryWriter<'a> {
         }
     }
 
-    pub fn insert(&mut self, key: &str, content: Vec<Text>) -> Result<(), AppError> {
+    pub fn insert(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
         self.main_buffer.insert(key.to_lowercase(), Definition { key: key.to_owned(), content });
         Ok(())
     }
 
-    pub fn alias(&mut self, from: &str, to: &str) -> Result<(), AppError> {
+    pub fn alias(&mut self, from: &str, to: &str) -> AppResultU {
         if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
             self.alias_buffer.insert(from, to.to_owned());
         }
         Ok(())
     }
 
-    pub fn levelize(&mut self, level: u8, key: &str) -> Result<(), AppError> {
+    pub fn levelize(&mut self, level: u8, key: &str) -> AppResultU {
         self.transaction.set(&self.level_bucket, key.to_owned(), Bincode::to_value_buf(level)?)?;
         let lb = self.level_buffer.entry(level).or_default();
         lb.push(key.to_owned());
         Ok(())
     }
 
-    fn complete(mut self) -> Result<Stat, AppError> {
+    fn complete(mut self) -> AppResult<Stat> {
         let words = self.main_buffer.complete(&mut self.transaction, &self.main_bucket)?;
         let aliases = self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket)?;
         self.transaction.commit()?;
@@ -279,7 +279,7 @@ impl<T> CatBuffer<T> {
 }
 
 impl CatBuffer<Definition> {
-    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, DicValue>) -> Result<usize, AppError> {
+    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, DicValue>) -> AppResult<usize> {
         let len = self.buffer.len();
         for (key, definitions) in self.buffer {
             transaction.set(bucket, key.clone(), Bincode::to_value_buf(Entry { key,  definitions })?)?;
@@ -289,7 +289,7 @@ impl CatBuffer<Definition> {
 }
 
 impl CatBuffer<String> {
-    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>) -> Result<usize, AppError> {
+    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>) -> AppResult<usize> {
         let len = self.buffer.len();
         for (key, values) in self.buffer {
             transaction.set(bucket, key, values.join("\n"))?;

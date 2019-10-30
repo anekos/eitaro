@@ -6,13 +6,13 @@ use std::path::Path;
 use rustyline;
 
 use crate::dictionary::Dictionary;
-use crate::errors::AppError;
+use crate::errors::AppResultU;
 use crate::path::get_history_path;
 use crate::screen;
 
 
 
-pub fn lemmatize<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
+pub fn lemmatize<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
     if let Some(found) = dic.get_smart(word.trim())? {
         let mut found = found.iter().map(|it| it.key.as_ref()).collect::<Vec<&str>>();
@@ -24,12 +24,12 @@ pub fn lemmatize<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), 
     Ok(())
 }
 
-pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
+pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
     lookup_and_print_lines(&mut dic, word)
 }
 
-pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> Result<(), AppError> {
+pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
     let config = rustyline::config::Builder::new()
         .auto_add_history(true)
         .build();
@@ -59,7 +59,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> Result<(), Ap
     Ok(())
 }
 
-fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> Result<(), AppError> {
+fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> AppResultU {
     for line in s.lines() {
         let found = dic.get_smart(line.trim())?;
         screen::standard::print_opt(found)?;
@@ -67,7 +67,7 @@ fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> Result<(), AppError>
     Ok(())
 }
 
-fn append_history(line: &str) -> Result<(), AppError> {
+fn append_history(line: &str) -> AppResultU {
     let path = get_history_path()?;
     let mut file = OpenOptions::new().write(true).append(true).create(true).open(path)?;
     writeln!(file, "{}", line)?;
