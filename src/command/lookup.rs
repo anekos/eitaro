@@ -13,9 +13,9 @@ use crate::screen;
 
 
 
-pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
+pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, word)
+    lookup_and_print_lines(&mut dic, word, color)
 }
 
 pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
@@ -33,7 +33,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
                 if input.is_empty() {
                     continue;
                 }
-                lookup_and_print_lines(&mut dic, input)?;
+                lookup_and_print_lines(&mut dic, input, true)?;
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
@@ -48,10 +48,14 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
     Ok(())
 }
 
-fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> AppResultU {
+fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool) -> AppResultU {
     for line in s.lines() {
         let found = dic.get_smart(line.trim())?;
-        screen::color::print_opt(found)?;
+        if color {
+            screen::color::print_opt(found)?;
+        } else {
+            screen::plain::print_opt(found)?;
+        }
     }
     Ok(())
 }

@@ -37,7 +37,8 @@ fn _main() -> AppResultU {
         command::lemmatize::lemmatize(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
-        command::lookup::lookup(&dictionary_path, word)
+        let color = !matches.is_present("no-color");
+        command::lookup::lookup(&dictionary_path, word, color)
     } else if let Some(ref matches) = matches.subcommand_matches("html") {
         let word = matches.value_of("word").unwrap(); // Required
         command::html::lookup(&dictionary_path, word)

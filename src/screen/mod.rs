@@ -4,6 +4,7 @@ use std::thread::spawn;
 
 mod curses;
 pub mod color;
+pub mod plain;
 
 use crate::dictionary::Entry;
 
