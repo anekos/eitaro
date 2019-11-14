@@ -11,7 +11,7 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
         use self::Text::*;
 
         match text {
-            Annot(s) | Word(s) | Class(s) | Definition(s) | Example(s) | Information(s) | Note(s) | Tag(s) =>
+            Annot(s) | Class(s) | Definition(s) | Example(s) | Information(s) | Note(s) | Tag(s) | Word(s)=>
                 write!(out, "{}", s),
             Countability(c) =>
                 write!(out, "{}", c),
@@ -23,7 +23,7 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
     let mut out = BufWriter::new(out);
 
     for entry in entries {
-        write!(out, "{}", &entry.key)?;
+        writeln!(out, "*{}*", &entry.key)?;
         for definition in &entry.definitions {
             for (index, text) in definition.content.iter().enumerate() {
                 if 0 < index {

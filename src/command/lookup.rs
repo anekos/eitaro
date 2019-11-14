@@ -13,9 +13,9 @@ use crate::screen;
 
 
 
-pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool) -> AppResultU {
+pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool, n: Option<usize>) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, word, color)
+    lookup_and_print_lines(&mut dic, word, color, n)
 }
 
 pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
@@ -33,7 +33,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
                 if input.is_empty() {
                     continue;
                 }
-                lookup_and_print_lines(&mut dic, input, true)?;
+                lookup_and_print_lines(&mut dic, input, true, None)?;
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
@@ -48,9 +48,12 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
     Ok(())
 }
 
-fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool) -> AppResultU {
+fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Option<usize>) -> AppResultU {
     for line in s.lines() {
-        let found = dic.get_smart(line.trim())?;
+        let mut found = dic.get_smart(line.trim())?;
+        if let Some(limit) = limit {
+            found = found.map(|it| it.into_iter().take(limit).collect());
+        }
         if color {
             screen::color::print_opt(found)?;
         } else {
