@@ -34,10 +34,10 @@ fn _main() -> AppResultU {
         command::export::export(&dictionary_path, as_text)
     } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
         let word = matches.value_of("word").unwrap(); // Required
-        command::terminal::lemmatize(&dictionary_path, word)
+        command::lemmatize::lemmatize(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
-        command::terminal::lookup(&dictionary_path, word)
+        command::lookup::lookup(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("html") {
         let word = matches.value_of("word").unwrap(); // Required
         command::html::lookup(&dictionary_path, word)
@@ -54,9 +54,9 @@ fn _main() -> AppResultU {
             })?;
         Ok(())
     } else if let Some(ref matches) = matches.subcommand_matches("interactive") {
-        command::terminal::shell(&dictionary_path, matches.value_of("prompt").unwrap_or(DEFAULT_PROMPT))
+        command::lookup::shell(&dictionary_path, matches.value_of("prompt").unwrap_or(DEFAULT_PROMPT))
     } else {
-        command::terminal::shell(&dictionary_path, DEFAULT_PROMPT)
+        command::lookup::shell(&dictionary_path, DEFAULT_PROMPT)
     }
 }
 

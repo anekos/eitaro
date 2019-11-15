@@ -12,15 +12,6 @@ use crate::screen;
 
 
 
-pub fn lemmatize<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
-    let mut dic = Dictionary::new(dictionary_path);
-    if let Some(found) = dic.lemmatize(word)? {
-        for it in found {
-            println!("{}", it);
-        }
-    }
-    Ok(())
-}
 
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
@@ -60,7 +51,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
 fn lookup_and_print_lines(dic: &mut Dictionary, s: &str) -> AppResultU {
     for line in s.lines() {
         let found = dic.get_smart(line.trim())?;
-        screen::standard::print_opt(found)?;
+        screen::color::print_opt(found)?;
     }
     Ok(())
 }

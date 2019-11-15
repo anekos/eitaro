@@ -3,7 +3,7 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use std::thread::spawn;
 
 mod curses;
-pub mod standard;
+pub mod color;
 
 use crate::dictionary::Entry;
 
@@ -21,7 +21,7 @@ impl Screen {
         if curses {
             spawn(move || curses::main(&rx, kuru, &bind_to));
         } else {
-            spawn(|| standard::main(rx));
+            spawn(|| color::main(rx));
         }
 
         Screen { tx }

@@ -66,6 +66,6 @@ pub fn print_opt(entries: Option<Vec<Entry>>) -> AppResultU {
     Ok(())
 }
 
-pub fn print_not_found() {
+fn print_not_found() {
     dprintln!([black on_red "{}" !] "Not Found");
 }
