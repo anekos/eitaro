@@ -1,5 +1,5 @@
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
 use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
@@ -59,6 +59,7 @@ pub struct Entry {
 pub struct DictionaryWriter<'a> {
     alias_bucket: Bucket<'a, String, String>,
     alias_buffer: CatBuffer<String>,
+    keys: HashSet<String>,
     level_bucket: Bucket<'a, String, LevelValue>,
     level_buffer: HashMap<u8, Vec<String>>,
     main_bucket: Bucket<'a, String, DicValue>,
@@ -231,6 +232,7 @@ impl<'a> DictionaryWriter<'a> {
         DictionaryWriter {
             alias_bucket,
             alias_buffer: CatBuffer::default(),
+            keys: HashSet::default(),
             level_bucket,
             level_buffer: HashMap::default(),
             main_bucket,
@@ -241,7 +243,9 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     pub fn insert(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
-        self.main_buffer.insert(key.to_lowercase(), Definition { key: key.to_owned(), content });
+        let lkey = key.to_lowercase();
+        self.keys.insert(lkey.clone());
+        self.main_buffer.insert(lkey, Definition { key: key.to_owned(), content });
         Ok(())
     }
 
@@ -264,7 +268,6 @@ impl<'a> DictionaryWriter<'a> {
         let aliases = self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket)?;
         self.transaction.commit()?;
 
-
         for (level, words) in self.level_buffer {
             let mut path = self.path.as_ref().to_path_buf();
             path.push(format!("level-{}", level));
@@ -272,6 +275,16 @@ impl<'a> DictionaryWriter<'a> {
             let mut file = BufWriter::new(file);
             for word in words {
                 writeln!(file, "{}", word)?;
+            }
+        }
+
+        {
+            let mut path = self.path.as_ref().to_path_buf();
+            path.push("keys");
+            let file = OpenOptions::new().write(true).append(false).create(true).truncate(true).open(path)?;
+            let mut file = BufWriter::new(file);
+            for key in self.keys {
+                writeln!(file, "{}", key)?;
             }
         }
 

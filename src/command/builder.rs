@@ -34,6 +34,7 @@ pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(files: &[T], dictionary_
                 Gene => gene::GeneLoader::default().load(&mut file, &mut writer)?,
             };
         }
+        println!("[Finalize]");
         Ok(())
     })?;
 
