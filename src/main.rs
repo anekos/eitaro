@@ -32,6 +32,11 @@ fn _main() -> AppResultU {
     } else if let Some(ref matches) = matches.subcommand_matches("export") {
         let as_text = matches.is_present("as-text");
         command::export::export(&dictionary_path, as_text)
+    } else if let Some(ref matches) = matches.subcommand_matches("html") {
+        let word = matches.value_of("word").unwrap(); // Required
+        command::html::lookup(&dictionary_path, word)
+    } else if let Some(ref matches) = matches.subcommand_matches("interactive") {
+        command::lookup::shell(&dictionary_path, matches.value_of("prompt").unwrap_or(DEFAULT_PROMPT))
     } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
         let word = matches.value_of("word").unwrap(); // Required
         command::lemmatize::lemmatize(&dictionary_path, word)
@@ -40,9 +45,6 @@ fn _main() -> AppResultU {
         let n = matches.value_of("n").map(|it| it.parse()).transpose()?;
         let color = !matches.is_present("no-color");
         command::lookup::lookup(&dictionary_path, word, color, n)
-    } else if let Some(ref matches) = matches.subcommand_matches("html") {
-        let word = matches.value_of("word").unwrap(); // Required
-        command::html::lookup(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
         let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
         command::http::start_server(
@@ -55,8 +57,6 @@ fn _main() -> AppResultU {
                 kuru: matches.is_present("kuru"),
             })?;
         Ok(())
-    } else if let Some(ref matches) = matches.subcommand_matches("interactive") {
-        command::lookup::shell(&dictionary_path, matches.value_of("prompt").unwrap_or(DEFAULT_PROMPT))
     } else {
         command::lookup::shell(&dictionary_path, DEFAULT_PROMPT)
     }
