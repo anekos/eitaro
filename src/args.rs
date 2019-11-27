@@ -84,4 +84,10 @@ pub fn build() -> App<'static, 'static> {
                     .arg(Arg::with_name("bind-to")
                          .help("host:port to listen")
                          .required(false)))
+        .subcommand(SubCommand::with_name("untypo")
+                    .alias("u")
+                    .about("Untypo")
+                    .arg(Arg::with_name("word")
+                         .help("Word")
+                         .required(true)))
 }

@@ -5,3 +5,4 @@ pub mod html;
 pub mod http;
 pub mod lemmatize;
 pub mod lookup;
+pub mod untypo;

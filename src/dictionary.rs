@@ -1,8 +1,9 @@
 
+use std::cmp;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
-use std::fs::OpenOptions;
-use std::io::{BufWriter, Write};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use array_tool::vec::Uniq;
@@ -11,6 +12,7 @@ use kv::bincode::Bincode;
 use kv::{Bucket, Config, Error as KvError, Manager, Serde, Txn, ValueBuf};
 use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
+use levenshtein::levenshtein;
 
 use crate::errors::{AppError, AppResult, AppResultU};
 use crate::str_utils::{fix_word, shorten, uncase};
@@ -176,6 +178,38 @@ impl Dictionary {
         let mut found = found.iter().map(|it| it.key.clone()).collect::<Vec<String>>();
         found.sort_by(|a, b| a.len().cmp(&b.len()));
         Ok(Some(found))
+    }
+
+    pub fn similar_words(&mut self, word: &str) -> AppResult<Vec<String>> {
+        let mut path = self.path.clone();
+        path.push("keys");
+
+        let file = File::open(&path)?;
+        let file = BufReader::new(file);
+
+        let len_d = cmp::min(2, word.len() / 4);
+        let min = cmp::max(1, word.len().checked_sub(len_d).unwrap_or(1));
+        let max = word.len() + len_d;
+
+        let mut candidates = vec![];
+        let mut min_d = std::usize::MAX;
+
+        for line in file.lines() {
+            let line = line?;
+            if min <= line.len() && line.len() <= max {
+                let d = levenshtein(word, &line);
+                if d < min_d {
+                    min_d = d;
+                }
+                if d < 10 {
+                    candidates.push((d, line.clone()));
+                }
+            }
+        }
+
+        candidates.retain(|(d, _)| *d == min_d);
+
+        Ok(candidates.into_iter().map(|(_, word)| word).collect())
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {

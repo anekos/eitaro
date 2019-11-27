@@ -57,6 +57,9 @@ fn _main() -> AppResultU {
                 kuru: matches.is_present("kuru"),
             })?;
         Ok(())
+    } else if let Some(ref matches) = matches.subcommand_matches("untypo") {
+        let word = matches.value_of("word").unwrap(); // Required
+        command::untypo::untypo(&dictionary_path, word)
     } else {
         command::lookup::shell(&dictionary_path, DEFAULT_PROMPT)
     }
