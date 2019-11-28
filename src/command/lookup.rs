@@ -54,10 +54,20 @@ fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Opt
         if let Some(limit) = limit {
             found = found.map(|it| it.into_iter().take(limit).collect());
         }
+
+        if let Some(found) = found {
+            if color {
+                screen::color::print(found)?;
+            } else {
+                screen::plain::print(found)?;
+            }
+            continue;
+        }
+
         if color {
-            screen::color::print_opt(found)?;
+            screen::color::print_not_found();
         } else {
-            screen::plain::print_opt(found)?;
+            screen::plain::print_not_found();
         }
     }
     Ok(())

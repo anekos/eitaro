@@ -11,7 +11,11 @@ use crate::errors::AppResultU;
 
 pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> AppResultU {
     for entries in rx {
-        print_opt(entries)?
+        if let Some(entries) = entries {
+            print(entries)?
+        } else {
+            print_not_found();
+        }
     }
     Ok(())
 }
@@ -57,15 +61,6 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
     Ok(())
 }
 
-pub fn print_opt(entries: Option<Vec<Entry>>) -> AppResultU {
-    if let Some(entries) = entries {
-        print(entries)?
-    } else {
-        print_not_found()
-    }
-    Ok(())
-}
-
-fn print_not_found() {
+pub fn print_not_found() {
     dprintln!([black on_red "{}" !] "Not Found");
 }
