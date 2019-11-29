@@ -3,6 +3,7 @@ use std::process::exit;
 
 mod args;
 mod command;
+mod correction;
 mod dictionary;
 mod errors;
 mod loader;

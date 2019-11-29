@@ -15,6 +15,8 @@ pub type AppResultU = AppResult<()>;
 pub enum AppError {
     #[fail(display = "Could not get application directory: {}", 0)]
     AppDirs(app_dirs::AppDirsError),
+    #[fail(display = "Deserialize error: {}", 0)]
+    Bincode(Box<bincode::ErrorKind>),
     #[fail(display = "CSV Error: {}", 0)]
     Csv(csv::Error),
     #[fail(display = "Error: {}", 0)]
@@ -68,6 +70,8 @@ define_error!(std::fmt::Error, Format);
 define_error!(std::num::ParseIntError, NumberFormat);
 define_error!(std::str::Utf8Error, Utf8);
 define_error!(csv::Error, Csv);
+define_error!(Box<bincode::ErrorKind>, Bincode);
+
 
 
 

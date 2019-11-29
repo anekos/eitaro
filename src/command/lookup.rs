@@ -1,12 +1,12 @@
 
 use std::fs::OpenOptions;
-use std::io::Write;
+use std::io::{stdin, stdout, Write};
 use std::path::Path;
 
 use rustyline;
 
 use crate::dictionary::Dictionary;
-use crate::errors::AppResultU;
+use crate::errors::{AppResult, AppResultU};
 use crate::path::get_history_path;
 use crate::screen;
 
@@ -50,28 +50,75 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
 
 fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Option<usize>) -> AppResultU {
     for line in s.lines() {
-        let mut found = dic.get_smart(line.trim())?;
-        if let Some(limit) = limit {
-            found = found.map(|it| it.into_iter().take(limit).collect());
-        }
-
-        if let Some(found) = found {
-            if color {
-                screen::color::print(found)?;
-            } else {
-                screen::plain::print(found)?;
-            }
-            continue;
-        }
-
-        if color {
-            screen::color::print_not_found();
-        } else {
-            screen::plain::print_not_found();
-        }
+        lookup_and_print(dic, line, color, limit, true)?;
     }
     Ok(())
 }
+
+fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option<usize>, correction: bool) -> AppResultU {
+    let mut found = dic.get_smart(word.trim())?;
+    if let Some(limit) = limit {
+        found = found.map(|it| it.into_iter().take(limit).collect());
+    }
+
+    if let Some(found) = found {
+        if color {
+            screen::color::print(found)?;
+        } else {
+            screen::plain::print(found)?;
+        }
+        return Ok(())
+    }
+
+    if correction {
+        if let Some(found) = untypo(dic, word)? {
+            return lookup_and_print(dic, &found, color, limit, false);
+        }
+    }
+
+    if color {
+        screen::color::print_not_found();
+    } else {
+        screen::plain::print_not_found();
+    }
+
+    Ok(())
+}
+
+fn untypo(dic: &mut Dictionary, word: &str) -> AppResult<Option<String>> {
+    let candidates = dic.correct(word);
+
+    if candidates.is_empty() {
+        return Ok(None)
+    }
+
+    for (index, candidate) in candidates.iter().enumerate() {
+        if 0 < index {
+            print!(" ");
+        }
+        print!("[{}] {} ", index, candidate);
+    }
+    println!("[x] Cancel");
+
+    loop {
+        print!("Choose a word: ");
+        stdout().flush()?;
+        let mut choosen = "".to_owned();
+        stdin().read_line(&mut choosen).unwrap();
+        let choosen = choosen.trim();
+        if choosen == "x" || choosen.is_empty() {
+            return Ok(None)
+        }
+
+        let choosen = choosen.parse::<usize>().ok().and_then(|it| candidates.get(it));
+        if let Some(choosen) = choosen {
+            return Ok(Some(choosen.to_owned()));
+        }
+
+        println!("Invalid input!");
+    }
+}
+
 
 fn append_history(line: &str) -> AppResultU {
     let path = get_history_path()?;

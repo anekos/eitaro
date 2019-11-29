@@ -1,19 +1,20 @@
 
-use std::cmp;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
-use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::fs::OpenOptions;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use array_tool::vec::Uniq;
+use bincode::serialize;
 use if_let_return::if_let_some;
 use kv::bincode::Bincode;
 use kv::{Bucket, Config, Error as KvError, Manager, Serde, Txn, ValueBuf};
+use lazy_init::Lazy;
 use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
-use levenshtein::levenshtein;
 
+use crate::correction::Corrector;
 use crate::errors::{AppError, AppResult, AppResultU};
 use crate::str_utils::{fix_word, shorten, uncase};
 
@@ -27,11 +28,12 @@ type DicValue = ValueBuf<Bincode<Entry>>;
 type LevelValue = ValueBuf<Bincode<u8>>;
 
 
-pub struct Dictionary {
+pub struct Dictionary  {
     config: Config,
+    corrector: Lazy<AppResult<Corrector>>,
     manager: Manager,
     path: PathBuf,
-}
+} 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum Text {
@@ -90,8 +92,9 @@ impl Dictionary {
         config.bucket(LEVEL_BUCKET, None);
 
         Dictionary {
-            manager,
             config,
+            corrector: Lazy::new(),
+            manager,
             path: dictionary_path.as_ref().to_path_buf()
         }
     }
@@ -180,36 +183,23 @@ impl Dictionary {
         Ok(Some(found))
     }
 
-    pub fn similar_words(&mut self, word: &str) -> AppResult<Vec<String>> {
+    pub fn correct(&mut self, word: &str) -> Vec<String> {
         let mut path = self.path.clone();
         path.push("keys");
 
-        let file = File::open(&path)?;
-        let file = BufReader::new(file);
+        let corrector = self.corrector.get_or_create(|| {
+            Corrector::load(&path)
+        });
 
-        let len_d = cmp::min(2, word.len() / 4);
-        let min = cmp::max(1, word.len().checked_sub(len_d).unwrap_or(1));
-        let max = word.len() + len_d;
-
-        let mut candidates = vec![];
-        let mut min_d = std::usize::MAX;
-
-        for line in file.lines() {
-            let line = line?;
-            if min <= line.len() && line.len() <= max {
-                let d = levenshtein(word, &line);
-                if d < min_d {
-                    min_d = d;
-                }
-                if d < 10 {
-                    candidates.push((d, line.clone()));
-                }
+        match corrector {
+            Ok(corrector) => {
+                corrector.correct(word)
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+                vec![]
             }
         }
-
-        candidates.retain(|(d, _)| *d == min_d);
-
-        Ok(candidates.into_iter().map(|(_, word)| word).collect())
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
@@ -278,7 +268,9 @@ impl<'a> DictionaryWriter<'a> {
 
     pub fn insert(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
         let lkey = key.to_lowercase();
-        self.keys.insert(lkey.clone());
+        if !(key.contains(' ') || key.contains('-') || key.contains('\'')) {
+            self.keys.insert(lkey.clone());
+        }
         self.main_buffer.insert(lkey, Definition { key: key.to_owned(), content });
         Ok(())
     }
@@ -317,9 +309,8 @@ impl<'a> DictionaryWriter<'a> {
             path.push("keys");
             let file = OpenOptions::new().write(true).append(false).create(true).truncate(true).open(path)?;
             let mut file = BufWriter::new(file);
-            for key in self.keys {
-                writeln!(file, "{}", key)?;
-            }
+            let buffer: Vec<u8> = serialize(&self.keys)?;
+            file.write_all(&buffer)?;
         }
 
         Ok(Stat { aliases, words })
