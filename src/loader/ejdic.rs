@@ -16,7 +16,7 @@ pub struct EjdicLoader();
 
 impl Loader for EjdicLoader {
     fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
-        println!("Reading...");
+        println!("Reading EJDIC...");
         let mut buffer = "".to_owned();
         let _ = source.read_to_string(&mut buffer)?;
 

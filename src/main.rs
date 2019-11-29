@@ -11,6 +11,7 @@ mod parser;
 mod path;
 mod screen;
 mod str_utils;
+mod types;
 
 use crate::errors::{AppError, AppResultU};
 use crate::command::http::{Config as HttpConfig};

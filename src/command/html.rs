@@ -33,6 +33,7 @@ fn print(entries: Vec<Entry>) -> Result<(), AppError> {
             Class(s) => span(out, "class", s),
             Countability(c) => span(out, "countability", &format!("{}", c)),
             Definition(s) => span(out, "definition", s),
+            Etymology(s) => span(out, "etymology", s),
             Example(s) => span(out, "example", s),
             Information(s) => span(out, "information", s),
             Note(s) => span(out, "note", s),

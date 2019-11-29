@@ -11,8 +11,10 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
         use self::Text::*;
 
         match text {
-            Annot(s) | Class(s) | Definition(s) | Example(s) | Information(s) | Note(s) | Tag(s) | Word(s)=>
+            Annot(s) | Class(s) | Definition(s) | Example(s) | Information(s) | Note(s) | Tag(s) | Word(s) =>
                 write!(out, "{}", s),
+            Etymology(s) =>
+                write!(out, "【語源】{}", s),
             Countability(c) =>
                 write!(out, "{}", c),
         }

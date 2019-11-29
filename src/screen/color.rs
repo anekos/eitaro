@@ -33,6 +33,7 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
             Class(s) => dwrite!(out, [blue "{}" !] s),
             Countability(c) => dwrite!(out, [yellow bold "{}" !] c),
             Definition(s) => dwrite!(out, [white bold "{}" !] s),
+            Etymology(s) => dwrite!(out, [magenta bold "語源" ! " {}"] s),
             Example(s) => dwrite!(out, [green "{}" !] s),
             Information(s) => dwrite!(out, [cyan "{}" !] s),
             Note(s) => write!(out, "{}", s),

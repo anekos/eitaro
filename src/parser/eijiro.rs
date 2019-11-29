@@ -20,7 +20,7 @@ fn with_spaces(p: Parser<char, Text>) -> Parser<char, Text> {
 }
 
 fn text() -> Parser<char, Vec<Text>> {
-    let p = annot() | class() | example() | tag() | word() | information() | note() | definition();
+    let p = annot() | class() | example() | etymology() | tag() | word() | information() | note() | definition();
     let p = with_spaces(p);
     p.repeat(0..)
 }
@@ -57,6 +57,11 @@ fn information() -> Parser<char, Text> {
 fn definition() -> Parser<char, Text> {
     let p = none_of(SPECIALS).repeat(1..);
     p.map(|it| Text::Definition(v2s(it)))
+}
+
+fn etymology() -> Parser<char, Text> {
+    let p = seq("【語源】") * none_of(SPECIALS).repeat(1..);
+    p.map(|it| Text::Etymology(v2s(it)))
 }
 
 fn tag() -> Parser<char, Text> {

@@ -20,7 +20,7 @@ pub struct EijiroLoader();
 
 impl Loader for EijiroLoader {
     fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
-        println!("Reading...");
+        println!("Reading Eijiro...");
         let mut buffer = vec![];
         let _ = source.read_to_end(&mut buffer)?;
 

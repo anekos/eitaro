@@ -4,6 +4,7 @@ use std::io::Read;
 use crate::dictionary::{DictionaryWriter};
 use crate::errors::AppResultU;
 
+pub mod csv;
 pub mod eijiro;
 pub mod ejdic;
 pub mod gene;

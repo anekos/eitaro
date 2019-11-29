@@ -3,23 +3,15 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use crate::errors::AppError;
-
 use crate::dictionary::Dictionary;
-use crate::loader::{eijiro, ejdic, gene, Loader};
-
-
-#[derive(Clone, Copy)]
-pub enum DictionaryFormat {
-    Eijiro,
-    Ejdic,
-    Gene,
-}
+use crate::errors::AppError;
+use crate::loader::{csv, eijiro, ejdic, gene, Loader};
+use crate::types::DictionaryFormat;
 
 
 
 pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(files: &[T], dictionary_path: &U) -> Result<(), AppError> {
-    use self::DictionaryFormat::*;
+    use DictionaryFormat::*;
 
     let mut dictionary = Dictionary::new(dictionary_path);
 
@@ -29,6 +21,7 @@ pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(files: &[T], dictionary_
             let format = guess(file)?;
             let mut file = File::open(file)?;
             match format {
+                Csv => csv::CsvLoader::default().load(&mut file, &mut writer)?,
                 Eijiro => eijiro::EijiroLoader::default().load(&mut file, &mut writer)?,
                 Ejdic => ejdic::EjdicLoader::default().load(&mut file, &mut writer)?,
                 Gene => gene::GeneLoader::default().load(&mut file, &mut writer)?,
@@ -60,6 +53,10 @@ fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> 
 
     if head.contains(&b'\t') {
         return Ok(DictionaryFormat::Ejdic);
+    }
+
+    if head.contains(&b',') {
+        return Ok(DictionaryFormat::Csv)
     }
 
     Err(AppError::Eitaro("Unknown format"))

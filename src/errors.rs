@@ -4,6 +4,8 @@ use std::sync::PoisonError;
 
 use failure::Fail;
 
+use crate::types::DictionaryFormat;
+
 
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -19,6 +21,8 @@ pub enum AppError {
     Bincode(Box<bincode::ErrorKind>),
     #[fail(display = "CSV Error: {}", 0)]
     Csv(csv::Error),
+    #[fail(display = "Dictionary format ({:?}) error: {}", 0, 1)]
+    DictionaryFormat(DictionaryFormat, &'static str),
     #[fail(display = "Error: {}", 0)]
     Eitaro(&'static str),
     #[fail(display = "Encoding error: {}", 0)]

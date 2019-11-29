@@ -18,7 +18,7 @@ pub struct GeneLoader();
 
 impl Loader for GeneLoader {
     fn load<S: Read>(&self, source: &mut S, writer: &mut DictionaryWriter) -> AppResultU {
-        println!("Reading...");
+        println!("Reading GENE...");
         let mut buffer = vec![];
         let _ = source.read_to_end(&mut buffer)?;
 
