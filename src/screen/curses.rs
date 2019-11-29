@@ -19,8 +19,8 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
     fn color_key(out: &mut EasyCurses, key: &str) {
         out.set_color_pair(colorpair!(Black on Yellow));
         out.set_bold(true);
-        out.print(key);
-        out.print("\n");
+        out.win.addstr(key);
+        out.win.addstr("\n");
         out.set_bold(false);
     }
 
@@ -28,14 +28,11 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
         use self::Text::*;
 
         fn write(out: &mut EasyCurses, text: &str, color_pair: ColorPair, bold: bool) {
-            // FIXME WORKAROUND for coredumping bug
-            let text = text.replace("%", "%%");
-
             out.set_color_pair(color_pair);
             if bold {
                 out.set_bold(true);
             }
-            out.print(text);
+            out.win.addstr(text);
             if bold {
                 out.set_bold(false);
             }
@@ -70,10 +67,10 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
 
         out.clear();
         out.set_color_pair(colorpair!(Black on White));
-        out.print(concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION")));
+        out.win.addstr(concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION")));
         out.set_color_pair(colorpair!(White on Black));
-        out.print(format!("\non {}", bind_to));
-        out.print("\n\npress q to quit");
+        out.win.addstr(format!("\non {}", bind_to));
+        out.win.addstr("\n\npress q to quit");
         out.refresh();
 
         let timeout = Duration::from_millis(100);
@@ -94,17 +91,17 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                         for definition in &entry.definitions {
                             for (index, text) in definition.content.iter().enumerate() {
                                 if 0 < index {
-                                    out.print(" ");
+                                    out.win.addstr(" ");
                                 }
                                 color(&mut out, text);
                             }
-                            out.print("\n");
+                            out.win.addstr("\n");
                         }
                     }
                 } else {
                     out.set_color_pair(colorpair!(White on Red));
                     out.set_bold(true);
-                    out.print("Not Found");
+                    out.win.addstr("Not Found");
                     out.set_bold(false);
                 }
                 rc = out.get_cursor_rc();
@@ -152,7 +149,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
                     out.set_color_pair(colorpair!(White on Black));
                     out.move_rc(rows - 1, face_col);
                     out.delete_line();
-                    out.print(FACES[face_index]);
+                    out.win.addstr(FACES[face_index]);
                     out.refresh();
 
                     face_col += if face_back { -1 } else { 1 };
