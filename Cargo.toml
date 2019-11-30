@@ -44,5 +44,3 @@ features = ["bincode-value"]
 version = "1"
 default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
-
-
