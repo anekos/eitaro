@@ -101,16 +101,20 @@ fn untypo(dic: &mut Dictionary, word: &str) -> AppResult<Option<String>> {
     println!("[x] Cancel");
 
     loop {
-        print!("Choose a word: ");
+        print!("Choose a word [0]: ");
         stdout().flush()?;
         let mut choosen = "".to_owned();
         stdin().read_line(&mut choosen).unwrap();
         let choosen = choosen.trim();
-        if choosen == "x" || choosen.is_empty() {
+        if choosen == "x" {
             return Ok(None)
         }
-
-        let choosen = choosen.parse::<usize>().ok().and_then(|it| candidates.get(it));
+        let choosen = if choosen.is_empty() {
+            Some(0)
+        } else {
+            choosen.parse::<usize>().ok()
+        };
+        let choosen = choosen.and_then(|it| candidates.get(it));
         if let Some(choosen) = choosen {
             return Ok(Some(choosen.to_owned()));
         }
