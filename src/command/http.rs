@@ -11,20 +11,16 @@ use crate::screen::{Screen, ScreenConfig};
 
 
 
-#[derive(Clone)]
 pub struct Config {
-    pub color: bool,
-    pub curses: bool,
     pub dictionary_path: PathBuf,
-    pub gui: bool,
     pub ignore_not_found: bool,
-    pub kuru: bool,
-    pub plain: bool,
+    pub screen: Option<ScreenConfig>,
 }
 
 #[derive(Clone)]
-pub struct State {
-    config: Config,
+struct State {
+    pub dictionary_path: PathBuf,
+    pub ignore_not_found: bool,
     pub screen: Option<Screen>,
 }
 
@@ -34,15 +30,11 @@ pub struct GetWord {
 }
 
 pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
-    let screen = config.screen_config().map(|conf| Screen::new(conf, bind_to.to_owned()));
-    let state = State { config, screen };
-
-    // let mut server = Nickel::with_data(state);
-    // server.get("/ack", on_ack);
-    // server.get("/word/:word", on_get_word);
-    // server.options = nickel::Options::default().output_on_listen(output_on_listen);
-    // server.listen(bind_to)?;
-
+    let state = State {
+        dictionary_path: config.dictionary_path,
+        ignore_not_found: config.ignore_not_found,
+        screen: config.screen.map(|config| Screen::new(config, bind_to.to_owned()))
+    };
     let server = HttpServer::new(move || {
         let state= state.clone();
         App::new()
@@ -71,10 +63,10 @@ fn on_ack() -> impl Responder {
 }
 
 fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Responder {
-    match get_word(&state.config.dictionary_path, &param.word) {
+    match get_word(&state.dictionary_path, &param.word) {
         Ok(entries) => {
             if let Some(screen) = &state.screen {
-                if !state.config.ignore_not_found || entries.is_some() {
+                if !state.ignore_not_found || entries.is_some() {
                     screen.print_opt(entries.clone());
                 }
             }
@@ -97,22 +89,4 @@ fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Respo
 fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     Ok(dic.get_smart(&word)?)
-}
-
-impl Config {
-    fn screen_config(&self) -> Option<ScreenConfig> {
-        Some(
-            if self.kuru || self.curses {
-                ScreenConfig::Curses { kuru: self.kuru }
-            } else if self.gui {
-                ScreenConfig::Gui
-            } else if self.color {
-                ScreenConfig::Color
-            } else if self.plain {
-                ScreenConfig::Plain
-            } else {
-                return None
-            }
-        )
-    }
 }

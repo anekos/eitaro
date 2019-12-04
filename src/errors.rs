@@ -27,6 +27,8 @@ pub enum AppError {
     Eitaro(&'static str),
     #[fail(display = "Encoding error: {}", 0)]
     Encoding(&'static str),
+    #[fail(display = "Invalid number: {}", 0)]
+    FloatingNumberFormat(std::num::ParseFloatError),
     #[fail(display = "Format error: {}", 0)]
     Format(std::fmt::Error),
     #[fail(display = "IO error: {}", 0)]
@@ -65,16 +67,17 @@ macro_rules! define_error {
 }
 
 
+define_error!(Box<bincode::ErrorKind>, Bincode);
 define_error!(app_dirs::AppDirsError, AppDirs);
+define_error!(csv::Error, Csv);
 define_error!(kv::Error, Kv);
 define_error!(pom::Error, Pom);
 define_error!(regex::Error, Regex);
 define_error!(rustyline::error::ReadlineError, Readline);
 define_error!(std::fmt::Error, Format);
+define_error!(std::num::ParseFloatError, FloatingNumberFormat);
 define_error!(std::num::ParseIntError, NumberFormat);
 define_error!(std::str::Utf8Error, Utf8);
-define_error!(csv::Error, Csv);
-define_error!(Box<bincode::ErrorKind>, Bincode);
 
 
 

@@ -20,7 +20,7 @@ pub struct Gui {
     tx: SyncSender<Option<Vec<Entry>>>
 }
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>) {
+pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_size: f64) {
     gtk::init().unwrap();
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -64,9 +64,14 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>) {
 
         for entries in rx.try_iter() {
             if let Some(entries) = entries {
-                let mut content = "".to_owned();
+                let mut content = format!(r#"<span font="{}""#, font_size);
+                if let Some(font_name) = &font_name {
+                    write!(content, r#"face="{}""#, font_name).unwrap();
+                }
+                write!(content, ">").unwrap();
                 markup_entries(&mut content, &entries);
-                result_label.set_markup(&format!(r#"<span>{}</span>"#, content));
+                write!(content, "</span>").unwrap();
+                result_label.set_markup(&content);
             }
         }
 

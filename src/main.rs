@@ -14,6 +14,7 @@ mod str_utils;
 mod types;
 
 use crate::errors::{AppError, AppResultU};
+use crate::screen::ScreenConfig;
 use crate::command::http::{Config as HttpConfig};
 
 
@@ -49,16 +50,26 @@ fn _main() -> AppResultU {
         command::lookup::lookup(&dictionary_path, word, color, n)
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
         let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
+        let kuru = matches.is_present("kuru");
+        let screen = if matches.is_present("curses") || kuru {
+            Some(ScreenConfig::Curses { kuru })
+        } else if matches.is_present("print") {
+            Some(ScreenConfig::Color)
+        } else if matches.is_present("gui") {
+            let font_name: Option<String> = matches.value_of("font-name").map(ToOwned::to_owned);
+            let font_size: f64 = matches.value_of("font-size").unwrap().parse()?; // Default
+            Some(ScreenConfig::Gui { font_name, font_size })
+        } else if matches.is_present("plain") {
+            Some(ScreenConfig::Plain)
+        } else {
+            None
+        };
         command::http::start_server(
             bind_to,
             HttpConfig {
-                color: matches.is_present("print"),
-                curses: matches.is_present("curses"),
                 dictionary_path,
-                gui: matches.is_present("gui"),
                 ignore_not_found: matches.is_present("ignore"),
-                kuru: matches.is_present("kuru"),
-                plain: matches.is_present("plain"),
+                screen,
             })?;
         Ok(())
     } else if let Some(ref matches) = matches.subcommand_matches("untypo") {

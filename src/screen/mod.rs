@@ -11,11 +11,10 @@ use crate::dictionary::Entry;
 
 
 
-#[derive(Debug)]
 pub enum ScreenConfig {
     Color,
     Curses { kuru: bool },
-    Gui,
+    Gui { font_name: Option<String>, font_size: f64 },
     Plain,
 }
 
@@ -37,8 +36,8 @@ impl Screen {
                 curses::main(&rx, kuru, &bind_to),
             Color =>
                 color::main(rx).unwrap(),
-            Gui =>
-                gui::main(rx),
+            Gui{ font_name, font_size } =>
+                gui::main(rx, font_name, font_size),
             Plain =>
                 plain::main(rx).unwrap(),
         });
