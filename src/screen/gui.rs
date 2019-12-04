@@ -27,6 +27,8 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
     WidgetExt::set_name(&window, "application");
     window.set_title("eitaro");
     window.set_role("eitaro");
+    #[allow(deprecated)]
+    window.set_wmclass("eitaro", "eitaro");
     window.set_border_width(0);
     // window.set_position(gtk::WindowPosition::Center);
     window.add_events(EventMask::SCROLL_MASK.bits() as i32);
