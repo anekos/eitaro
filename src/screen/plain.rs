@@ -1,10 +1,22 @@
 
+use std::sync::mpsc::Receiver;
 use std::io::{BufWriter, Error as IOError, stdout, Write};
 
 use crate::dictionary::{Entry, Text};
 use crate::errors::AppResultU;
 
 
+
+pub fn main(rx: Receiver<Option<Vec<Entry>>>) -> AppResultU {
+    for entries in rx {
+        if let Some(entries) = entries {
+            print(entries)?
+        } else {
+            print_not_found();
+        }
+    }
+    Ok(())
+}
 
 pub fn print(entries: Vec<Entry>) -> AppResultU {
     fn color<W: Write>(out: &mut W, text: &Text) -> Result<(), IOError> {

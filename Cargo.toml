@@ -19,6 +19,8 @@ easycurses = "*"
 encoding = "*"
 failure = "*"
 failure_derive = "*"
+gdk = "*"
+glib = "*"
 heck = "0.3.0"
 hyper = "0.10.*"
 if-let-return = "*"
@@ -36,6 +38,11 @@ termsize = "0.1"
 unicase = "1.0.*"
 unicode-jp = "*"
 
+# https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
+[dependencies.gtk]
+version = "^0.5"
+features = ["v3_22_30"]
+
 [dependencies.kv]
 version = "*"
 features = ["bincode-value"]
@@ -44,3 +51,4 @@ features = ["bincode-value"]
 version = "1"
 default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
+

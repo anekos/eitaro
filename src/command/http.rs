@@ -7,23 +7,25 @@ use serde_derive::*;
 
 use crate::dictionary::{Dictionary, Entry};
 use crate::errors::AppError;
-use crate::screen::Screen;
+use crate::screen::{Screen, ScreenConfig};
 
 
 
 #[derive(Clone)]
 pub struct Config {
+    pub color: bool,
     pub curses: bool,
     pub dictionary_path: PathBuf,
-    pub do_print: bool,
+    pub gui: bool,
     pub ignore_not_found: bool,
     pub kuru: bool,
+    pub plain: bool,
 }
 
 #[derive(Clone)]
 pub struct State {
     config: Config,
-    pub screen: Screen,
+    pub screen: Option<Screen>,
 }
 
 #[derive(Deserialize)]
@@ -31,15 +33,8 @@ pub struct GetWord {
     word: String,
 }
 
-pub fn start_server(bind_to: &str, mut config: Config) -> Result<(), AppError> {
-    if config.kuru {
-        config.curses = true;
-    }
-    if config.curses {
-        config.do_print = true;
-    }
-
-    let screen = Screen::new(config.curses, config.kuru, bind_to.to_owned());
+pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
+    let screen = config.screen_config().map(|conf| Screen::new(conf, bind_to.to_owned()));
     let state = State { config, screen };
 
     // let mut server = Nickel::with_data(state);
@@ -78,15 +73,18 @@ fn on_ack() -> impl Responder {
 fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Responder {
     match get_word(&state.config.dictionary_path, &param.word) {
         Ok(entries) => {
-            if state.config.do_print && (!state.config.ignore_not_found || entries.is_some()) {
-                state.screen.print_opt(entries.clone());
+            if let Some(screen) = &state.screen {
+                if !state.config.ignore_not_found || entries.is_some() {
+                    screen.print_opt(entries.clone());
+                }
             }
             if let Some(entries) = entries {
                 let mut content = vec![];
-                for entry in entries {
+                for entry in &entries {
                     content.push(format!("#{}", entry.key));
                     // content.push(entry.content);
                 }
+
                 Some(content.join("\n"))
             } else {
                 None
@@ -99,4 +97,22 @@ fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Respo
 fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
     let mut dic = Dictionary::new(dictionary_path);
     Ok(dic.get_smart(&word)?)
+}
+
+impl Config {
+    fn screen_config(&self) -> Option<ScreenConfig> {
+        Some(
+            if self.kuru || self.curses {
+                ScreenConfig::Curses { kuru: self.kuru }
+            } else if self.gui {
+                ScreenConfig::Gui
+            } else if self.color {
+                ScreenConfig::Color
+            } else if self.plain {
+                ScreenConfig::Plain
+            } else {
+                return None
+            }
+        )
+    }
 }

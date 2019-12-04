@@ -52,11 +52,13 @@ fn _main() -> AppResultU {
         command::http::start_server(
             bind_to,
             HttpConfig {
+                color: matches.is_present("print"),
                 curses: matches.is_present("curses"),
                 dictionary_path,
-                do_print: matches.is_present("print"),
+                gui: matches.is_present("gui"),
                 ignore_not_found: matches.is_present("ignore"),
                 kuru: matches.is_present("kuru"),
+                plain: matches.is_present("plain"),
             })?;
         Ok(())
     } else if let Some(ref matches) = matches.subcommand_matches("untypo") {
