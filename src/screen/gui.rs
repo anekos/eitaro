@@ -1,5 +1,4 @@
 
-
 use std::fmt::Write;
 use std::process::exit;
 use std::sync::mpsc::{SyncSender, Receiver};
@@ -49,14 +48,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
 
     css_provider.load_from_data("#label { background-color: #004040; }".as_bytes()).unwrap();
 
-    window.connect_delete_event(|_, _| exit(0));
-    window.connect_key_press_event(|_, key| {
-        match key.as_ref().keyval {
-            113 | 65308 => exit(0),
-            _ => Inhibit(false),
-        }
-    });
-
+    connect_events(&scroller);
     window.show_all();
 
     loop {
@@ -132,4 +124,31 @@ fn color(out: &mut String, s: &str, fg: &str, bg: Option<&str>, bold: bool) {
         write!(out, r#" weight="bold""#).unwrap();
     }
     write!(out, r#">{}</span>"#, markup_escape_text(s)).unwrap();
+}
+
+fn connect_events(window: &gtk::ScrolledWindow) {
+    window.connect_delete_event(|_, _| exit(0));
+
+    window.connect_key_press_event(|scroller, ev| {
+        let keyval = ev.as_ref().keyval;
+        // let mut key = get_modifiers_text(ev.get_state(), true);
+        let key: String = gdk::keyval_name(keyval).unwrap_or_else(|| format!("{}", keyval));
+        match &*key {
+            "q" | "Escape" => exit(0),
+            "j" | "Down" => scroll(&scroller, false),
+            "k" | "Up" => scroll(&scroller, true),
+            _ => (),
+        }
+        Inhibit(false)
+    });
+}
+
+fn scroll(window: &ScrolledWindow, up: bool) {
+    if let Some(adj) = window.get_vadjustment() {
+        let mut page_size = adj.get_page_size();
+        if up {
+            page_size *= -1.0;
+        }
+        adj.set_value(page_size + adj.get_value());
+    }
 }
