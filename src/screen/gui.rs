@@ -39,6 +39,7 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
     let result_label = gtk::Label::new(None);
     WidgetExt::set_name(&result_label, "label");
     result_label.set_line_wrap(true);
+    result_label.set_selectable(true);
     scroller.add(&result_label);
 
     let display = window.get_display().unwrap();
