@@ -10,3 +10,6 @@ addons:
   apt:
     packages:
     - libgtk-3-dev
+cache:
+  directories:
+    - $HOME/.rustup
