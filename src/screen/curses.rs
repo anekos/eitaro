@@ -43,6 +43,7 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
             Countability(c) => write(out, &c.to_string(), colorpair!(Yellow on Black), false),
             Class(s) => write(out, s, colorpair!(Blue on Black), false),
             Definition(s) => write(out, s, colorpair!(White on Black), true),
+            Error(s) => write(out, s, colorpair!(Red on Black), true),
             Etymology(s) => {
                 write(out, "語源 ", colorpair!(Magenta on Black), true);
                 write(out, s, colorpair!(White on Black), false);

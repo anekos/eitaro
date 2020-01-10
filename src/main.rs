@@ -4,6 +4,7 @@ use std::process::exit;
 mod args;
 mod command;
 mod correction;
+mod delay;
 mod dictionary;
 mod errors;
 mod loader;
@@ -58,7 +59,8 @@ fn _main() -> AppResultU {
         } else if matches.is_present("gui") {
             let font_name: Option<String> = matches.value_of("font-name").map(ToOwned::to_owned);
             let font_size: f64 = matches.value_of("font-size").unwrap().parse()?; // Default
-            Some(ScreenConfig::Gui { font_name, font_size })
+            let config = screen::gui::Config { dictionary_path: dictionary_path.clone(), font_name, font_size };
+            Some(ScreenConfig::Gui(config))
         } else if matches.is_present("plain") {
             Some(ScreenConfig::Plain)
         } else {

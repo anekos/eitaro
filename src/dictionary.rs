@@ -41,6 +41,7 @@ pub enum Text {
     Class(String),
     Countability(char),
     Definition(String),
+    Error(String),
     Etymology(String),
     Example(String),
     Information(String),
@@ -98,6 +99,11 @@ impl Dictionary {
             manager,
             path: dictionary_path.as_ref().to_path_buf()
         }
+    }
+
+    pub fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
+        let mut dic = Dictionary::new(dictionary_path);
+        Ok(dic.get_smart(&word)?)
     }
 
    pub fn get(&mut self, word: &str) -> AppResult<Option<Vec<Entry>>> {

@@ -1,25 +1,29 @@
 
 use std::fmt::Write;
+use std::path::PathBuf;
 use std::process::exit;
 use std::sync::mpsc::{SyncSender, Receiver};
-use std::thread::sleep;
+use std::thread::{self, sleep};
 use std::time::Duration;
 
+use closet::clone_army;
 use gdk::{DisplayExt, EventMask};
 use glib::markup_escape_text;
 use gtk::prelude::*;
 use gtk::{CssProvider, ScrolledWindow, self, StyleContext};
 
-use crate::dictionary::{Definition, Entry, Text};
+use crate::delay::Delay;
+use crate::dictionary::{Definition, Dictionary, Entry, Text};
 
 
 
-#[derive(Clone)]
-pub struct Gui {
-    tx: SyncSender<Option<Vec<Entry>>>
+pub struct Config {
+    pub dictionary_path: PathBuf,
+    pub font_name: Option<String>,
+    pub font_size: f64,
 }
 
-pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_size: f64) {
+pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>, config: Config) {
     gtk::init().unwrap();
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -36,11 +40,18 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
     WidgetExt::set_name(&scroller, "scroller");
     window.add(&scroller);
 
-    let result_label = gtk::Label::new(None);
-    WidgetExt::set_name(&result_label, "label");
-    result_label.set_line_wrap(true);
-    result_label.set_selectable(true);
-    scroller.add(&result_label);
+    let vbox = gtk::Box::new(gtk::Orientation::Vertical, 2);
+
+    let label = gtk::Label::new(None);
+    WidgetExt::set_name(&label, "label");
+    label.set_line_wrap(true);
+    label.set_selectable(true);
+    vbox.pack_end(&label, true, true, 0);
+
+    let entry = gtk::Entry::new();
+    vbox.pack_end(&entry, false, false, 0);
+
+    scroller.add(&vbox);
 
     let display = window.get_display().unwrap();
     let screen = display.get_default_screen();
@@ -49,8 +60,12 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
 
     css_provider.load_from_data("#label { background-color: #004040; }".as_bytes()).unwrap();
 
-    connect_events(&scroller);
-    window.show_all();
+    vbox.show();
+    label.show();
+    scroller.show();
+    window.show();
+
+    connect_events(window, &scroller, entry, config.dictionary_path, tx);
 
     loop {
         while gtk::events_pending() {
@@ -59,14 +74,14 @@ pub fn main(rx: Receiver<Option<Vec<Entry>>>, font_name: Option<String>, font_si
 
         for entries in rx.try_iter() {
             if let Some(entries) = entries {
-                let mut content = format!(r#"<span font="{}""#, font_size);
-                if let Some(font_name) = &font_name {
+                let mut content = format!(r#"<span font="{}""#, config.font_size);
+                if let Some(font_name) = &config.font_name {
                     write!(content, r#"face="{}""#, font_name).unwrap();
                 }
                 write!(content, ">").unwrap();
                 markup_entries(&mut content, &entries);
                 write!(content, "</span>").unwrap();
-                result_label.set_markup(&content);
+                label.set_markup(&content);
             }
         }
 
@@ -103,6 +118,7 @@ fn markup_text(out: &mut String, text: &Text) {
         Countability(c) => color(out, &c.to_string(), "yellow", None, false),
         Class(s) => color(out, s, "lightblue", None, false),
         Definition(s) => color(out, s, "white", None, true),
+        Error(s) => color(out, s, "red", None, true),
         Etymology(s) => {
             color(out, "語源 ", "magenta", None, true);
             color(out, s, "white", None, false);
@@ -127,21 +143,56 @@ fn color(out: &mut String, s: &str, fg: &str, bg: Option<&str>, bold: bool) {
     write!(out, r#">{}</span>"#, markup_escape_text(s)).unwrap();
 }
 
-fn connect_events(window: &gtk::ScrolledWindow) {
-    window.connect_delete_event(|_, _| exit(0));
+fn connect_events(window: gtk::Window, scroller: &gtk::ScrolledWindow, entry: gtk::Entry, dictionary_path: PathBuf, tx: SyncSender<Option<Vec<Entry>>>) {
+    let delay = Delay::new(Duration::from_millis(250));
 
-    window.connect_key_press_event(|scroller, ev| {
-        let keyval = ev.as_ref().keyval;
-        // let mut key = get_modifiers_text(ev.get_state(), true);
-        let key: String = gdk::keyval_name(keyval).unwrap_or_else(|| format!("{}", keyval));
+    entry.connect_key_press_event(clone_army!([window, scroller] move |entry, ev| {
+        let empty = entry.get_text().map(|it| it.is_empty()).unwrap_or(true);
+        let key = to_key_string(&ev);
+        match &*key {
+            "Return" | "Escape" => {
+                if empty {
+                    entry.hide();
+                    window.set_focus(Some(&scroller));
+                } else {
+                    entry.set_text("");
+                }
+                return Inhibit(true);
+            },
+            _ => (),
+        }
+        Inhibit(false)
+    }));
+
+    entry.connect_key_release_event(move |entry, _| {
+        if let Some(query) = entry.get_text() {
+            if let Ok(entries) = Dictionary::get_word(&dictionary_path, &query) {
+                thread::spawn(clone_army!([tx, delay] move || {
+                    if delay.wait() {
+                        tx.send(entries).unwrap()
+                    }
+                }));
+            }
+        }
+        Inhibit(false)
+    });
+
+    scroller.connect_delete_event(|_, _| exit(0));
+
+    scroller.connect_key_press_event(clone_army!([entry] move |scroller, ev| {
+        let key = to_key_string(&ev);
         match &*key {
             "q" | "Escape" => exit(0),
             "j" | "Down" => scroll(&scroller, false),
             "k" | "Up" => scroll(&scroller, true),
+            "slash" => {
+                window.set_focus(Some(&entry));
+                entry.show();
+            },
             _ => (),
         }
         Inhibit(false)
-    });
+    }));
 }
 
 fn scroll(window: &ScrolledWindow, up: bool) {
@@ -152,4 +203,9 @@ fn scroll(window: &ScrolledWindow, up: bool) {
         }
         adj.set_value(page_size + adj.get_value());
     }
+}
+
+fn to_key_string(ev: &gdk::EventKey) -> String {
+    let keyval = ev.as_ref().keyval;
+    gdk::keyval_name(keyval).unwrap_or_else(|| format!("{}", keyval))
 }

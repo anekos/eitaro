@@ -14,7 +14,7 @@ use crate::dictionary::Entry;
 pub enum ScreenConfig {
     Color,
     Curses { kuru: bool },
-    Gui { font_name: Option<String>, font_size: f64 },
+    Gui(gui::Config),
     Plain,
 }
 
@@ -31,18 +31,20 @@ impl Screen {
 
         let (tx, rx) = sync_channel(0);
 
+        let screen = Screen { tx: tx.clone() };
+
         spawn(move || match config {
             Curses { kuru } =>
                 curses::main(&rx, kuru, &bind_to),
             Color =>
                 color::main(rx).unwrap(),
-            Gui{ font_name, font_size } =>
-                gui::main(rx, font_name, font_size),
+            Gui(config) =>
+                gui::main(tx, rx, config),
             Plain =>
                 plain::main(rx).unwrap(),
         });
 
-        Screen { tx }
+        screen
     }
 
     pub fn print_opt(&self, content: Option<Vec<Entry>>) {

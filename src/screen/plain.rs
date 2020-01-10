@@ -25,6 +25,8 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
         match text {
             Annot(s) | Class(s) | Definition(s) | Example(s) | Information(s) | Note(s) | Tag(s) | Word(s) =>
                 write!(out, "{}", s),
+            Error(s) =>
+                write!(out, "!!{}!!", s),
             Etymology(s) =>
                 write!(out, "【語源】{}", s),
             Countability(c) =>

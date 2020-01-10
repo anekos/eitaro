@@ -1,11 +1,11 @@
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use actix_cors::Cors;
 use actix_web::{App,  HttpServer, Responder, web, http::header};
 use serde_derive::*;
 
-use crate::dictionary::{Dictionary, Entry};
+use crate::dictionary::Dictionary;
 use crate::errors::AppError;
 use crate::screen::{Screen, ScreenConfig};
 
@@ -63,7 +63,7 @@ fn on_ack() -> impl Responder {
 }
 
 fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Responder {
-    match get_word(&state.dictionary_path, &param.word) {
+    match Dictionary::get_word(&state.dictionary_path, &param.word) {
         Ok(entries) => {
             if let Some(screen) = &state.screen {
                 if !state.ignore_not_found || entries.is_some() {
@@ -84,9 +84,4 @@ fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Respo
         },
         Err(err) => panic!("Not implemented: {}", err)
     }
-}
-
-fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
-    let mut dic = Dictionary::new(dictionary_path);
-    Ok(dic.get_smart(&word)?)
 }
