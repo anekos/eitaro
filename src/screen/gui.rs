@@ -101,16 +101,16 @@ fn markup_text(out: &mut String, text: &Text) {
     match &text {
         Annot(s) => color(out, s, "yellow", None, false),
         Countability(c) => color(out, &c.to_string(), "yellow", None, false),
-        Class(s) => color(out, s, "blue", None, false),
+        Class(s) => color(out, s, "lightblue", None, false),
         Definition(s) => color(out, s, "white", None, true),
         Etymology(s) => {
             color(out, "語源 ", "magenta", None, true);
             color(out, s, "white", None, false);
         },
-        Example(s) => color(out, s, "green", None, false),
+        Example(s) => color(out, s, "lightgreen", None, false),
         Information(s) => color(out, s, "cyan", None, false),
         Note(s) => color(out, s, "white", None, false),
-        Tag(s) => color(out, s, "red", None, false),
+        Tag(s) => color(out, s, "orangered", None, false),
         Word(s) => color(out, s, "black", Some("yellow"), false),
     }
 
