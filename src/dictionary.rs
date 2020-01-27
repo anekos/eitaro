@@ -294,7 +294,14 @@ fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
 
 fn lemmatize<'a>(tx: &Txn<'a>, bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<Option<String>> {
     let mut word = word.to_owned();
+    let mut path = HashSet::<String>::new();
+
+    path.insert(word.clone());
+
     while let Some(found) = fix_alias(tx.get(&bkt, word.clone()))? {
+        if !path.insert(found.clone()) {
+            return Ok(Some(word))
+        }
         word = found;
     }
     Ok(Some(word))
