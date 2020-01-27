@@ -329,6 +329,10 @@ impl<'a> DictionaryWriter<'a> {
 
     pub fn alias(&mut self, from: &str, to: &str, for_lemmatization: bool) -> AppResultU {
         if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
+            if from == to {
+                return Ok(());
+            }
+
             if for_lemmatization {
                 self.transaction.set(&self.lemma_bucket, from.clone(), to.clone())?;
             }

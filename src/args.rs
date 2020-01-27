@@ -5,6 +5,8 @@ use clap::*;
 
 pub fn build() -> App<'static, 'static> {
     app_from_crate!()
+        .subcommand(SubCommand::with_name("analyze")
+                    .about("Analyze text (STDIN) using SVL"))
         .subcommand(SubCommand::with_name("interactive")
                     .alias("i")
                     .alias("shell")

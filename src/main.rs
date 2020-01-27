@@ -30,7 +30,9 @@ fn _main() -> AppResultU {
 
     let dictionary_path = path::get_dictionary_path()?;
 
-    if let Some(ref matches) = matches.subcommand_matches("build") {
+    if matches.subcommand_matches("analyze").is_some() {
+        command::analyze::analyze(&dictionary_path)
+    } else if let Some(ref matches) = matches.subcommand_matches("build") {
         let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
         command::builder::build_dictionary(&files, &dictionary_path)
     } else if let Some(ref matches) = matches.subcommand_matches("export") {

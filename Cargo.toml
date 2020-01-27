@@ -31,6 +31,7 @@ nickel = "*"
 pom = "1.1.*"
 regex = "*"
 rustyline = "*"
+separator = "0.3.1"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
@@ -52,4 +53,3 @@ features = ["bincode-value"]
 version = "1"
 default-features = false
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
-
