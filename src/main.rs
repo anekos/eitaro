@@ -44,11 +44,16 @@ fn _main() -> AppResultU {
     } else if let Some(ref matches) = matches.subcommand_matches("lemmatize") {
         let word = matches.value_of("word").unwrap(); // Required
         command::lemmatize::lemmatize(&dictionary_path, word)
+    } else if let Some(ref matches) = matches.subcommand_matches("level") {
+        let word = matches.value_of("word").unwrap(); // Required
+        command::level::level(&dictionary_path, word)
     } else if let Some(ref matches) = matches.subcommand_matches("lookup") {
         let word = matches.value_of("word").unwrap(); // Required
         let n = matches.value_of("n").map(|it| it.parse()).transpose()?;
         let color = !matches.is_present("no-color");
         command::lookup::lookup(&dictionary_path, word, color, n)
+    } else if matches.subcommand_matches("path").is_some() {
+        command::path::path(&dictionary_path)
     } else if let Some(ref matches) = matches.subcommand_matches("server") {
         let bind_to = matches.value_of("bind-to").unwrap_or("127.0.0.1:8116");
         let kuru = matches.is_present("kuru");

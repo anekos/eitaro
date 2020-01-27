@@ -153,6 +153,18 @@ impl Dictionary {
         Ok(opt(result))
    }
 
+   pub fn get_level(&mut self, word: &str) -> AppResult<Option<u8>> {
+       let handle = self.manager.open(self.config.clone())?;
+       let store = handle.read()?;
+       let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
+       let transaction = store.read_txn()?;
+       match transaction.get(&level_bucket, word.to_owned()) {
+           Ok(found) => Ok(Some(found.inner()?.to_serde())),
+           Err(KvError::NotFound) => Ok(None),
+           Err(err) => Err(AppError::from(err)),
+       }
+   }
+
    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         if_let_some!(fixed = fix_word(word), Ok(None));
 
