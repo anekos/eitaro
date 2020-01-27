@@ -26,7 +26,7 @@ pub fn build() -> App<'static, 'static> {
                          .required(true)
                          .min_values(1)))
         .subcommand(SubCommand::with_name("export")
-                    .about("Export")
+                    .about("Export the definitions for the given words (STDIN)")
                     .arg(Arg::with_name("as-text")
                          .help("Extract words from input as text")
                          .short("t")
