@@ -112,7 +112,7 @@ impl fmt::Display for Level {
         use Level::*;
 
         match self {
-            Leveled(level) => f.pad(&format!("Level {:>2}", level)),
+            Leveled(level) => f.pad(&format!("{:>02}", level)),
             OutOf => f.pad("Out of level"),
             NotInDictionary => f.pad("Not in dict"),
         }
