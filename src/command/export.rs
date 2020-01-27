@@ -53,9 +53,8 @@ fn extract_text(dictionary: &mut Dictionary, s: &str) -> AppResult<Vec<String>> 
     let mut result = HashSet::new();
     for word in words {
         if let Some(found) = dictionary.lemmatize(word)? {
-            let word = &found[0];
-            if valid.is_match(word) {
-                result.insert(word.clone());
+            if valid.is_match(&found) {
+                result.insert(found);
             }
         }
     }

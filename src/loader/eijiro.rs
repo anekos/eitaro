@@ -41,13 +41,13 @@ impl Loader for EijiroLoader {
 
 fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
     fn extract_aliases(writer: &mut DictionaryWriter, key: &str, right: &str) -> AppResultU {
-        fn extract(writer: &mut DictionaryWriter, key: &str, right: &str, word_type: WordType, pattern: &str) -> AppResultU {
+        fn extract(writer: &mut DictionaryWriter, key: &str, right: &str, word_type: WordType, pattern: &str, for_lemmatization: bool) -> AppResultU {
             if let Some(found) = right.find(pattern) {
                 let right = &right[found + pattern.len()..];
                 let right = read_until_symbols(&right);
                 if !right.is_empty() {
                     for it in scan_words(word_type, right) {
-                        writer.alias(&it, key)?;
+                        writer.alias(&it, key, for_lemmatization)?;
                     }
                 }
             }
@@ -55,10 +55,10 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
         }
 
         let right = right.replace('（', "").replace('）', "");
-        extract(writer, key, &right, WordType::English, "【変化】")?;
-        extract(writer, key, &right, WordType::English, "【同】")?;
-        extract(writer, key, &right, WordType::Katakana, "【＠】")?;
-        extract(writer, key, &right, WordType::English, "【略】")
+        extract(writer, key, &right, WordType::English, "【変化】", true)?;
+        extract(writer, key, &right, WordType::English, "【同】", false)?;
+        extract(writer, key, &right, WordType::Katakana, "【＠】", false)?;
+        extract(writer, key, &right, WordType::English, "【略】", false)
     }
 
     fn extract_link(writer: &mut DictionaryWriter, key: &str, mut right: &str) -> AppResultU {
@@ -70,8 +70,8 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
             return Ok(())
         }
         if let Some(r) = right.find('>') {
-            writer.alias(&right[0..r], key)?;
-            writer.alias(key, &right[0..r])?;
+            writer.alias(&right[0..r], key, false)?;
+            writer.alias(key, &right[0..r], false)?;
         }
         Ok(())
     }

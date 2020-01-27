@@ -40,7 +40,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
         writer.insert(key, parse_line(definition)?)?;
     }
     for alias in keys {
-        writer.alias(&alias.trim(), key)?;
+        writer.alias(&alias.trim(), key, false)?;
     }
 
     Ok(())

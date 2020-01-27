@@ -20,9 +20,10 @@ use crate::str_utils::{fix_word, shorten, uncase};
 
 
 
-const MAIN_BUCKET: &str = "dictionary";
 const ALIAS_BUCKET: &str = "alias";
+const LEMMA_BUCKET: &str = "lemma";
 const LEVEL_BUCKET: &str = "level";
+const MAIN_BUCKET: &str = "dictionary";
 
 type DicValue = ValueBuf<Bincode<Entry>>;
 type LevelValue = ValueBuf<Bincode<u8>>;
@@ -66,6 +67,7 @@ pub struct DictionaryWriter<'a> {
     alias_bucket: Bucket<'a, String, String>,
     alias_buffer: CatBuffer<String>,
     keys: HashSet<String>,
+    lemma_bucket: Bucket<'a, String, String>,
     level_bucket: Bucket<'a, String, LevelValue>,
     level_buffer: HashMap<u8, Vec<String>>,
     main_bucket: Bucket<'a, String, DicValue>,
@@ -91,6 +93,7 @@ impl Dictionary {
         let mut config = Config::default(dictionary_path);
         config.bucket(MAIN_BUCKET, None);
         config.bucket(ALIAS_BUCKET, None);
+        config.bucket(LEMMA_BUCKET, None);
         config.bucket(LEVEL_BUCKET, None);
 
         Dictionary {
@@ -107,22 +110,6 @@ impl Dictionary {
     }
 
    pub fn get(&mut self, word: &str) -> AppResult<Option<Vec<Entry>>> {
-        fn fix(result: Result<DicValue, KvError>) -> Result<Option<Entry>, KvError> {
-            match result {
-                Ok(found) => Ok(Some(found.inner()?.to_serde())),
-                Err(KvError::NotFound) => Ok(None),
-                Err(err) => Err(err),
-            }
-        }
-
-        fn fix_alias(result: Result<String, KvError>) -> Result<Option<String>, KvError> {
-            match result {
-                Ok(found) => Ok(Some(found)),
-                Err(KvError::NotFound) => Ok(None),
-                Err(err) => Err(err),
-            }
-        }
-
         fn opt(result: Vec<Entry>) -> Option<Vec<Entry>> {
             if result.is_empty() {
                 return None;
@@ -195,11 +182,19 @@ impl Dictionary {
         Ok(None)
     }
 
-    pub fn lemmatize(&mut self, word: &str) -> AppResult<Option<Vec<String>>> {
-        if_let_some!(found = self.get_smart(word.trim())?, Ok(None));
-        let mut found = found.iter().map(|it| it.key.clone()).collect::<Vec<String>>();
-        found.sort_by(|a, b| a.len().cmp(&b.len()));
-        Ok(Some(found))
+    pub fn lemmatize(&mut self, word: &str) -> AppResult<Option<String>> {
+        let handle = self.manager.open(self.config.clone())?;
+        let store = handle.read()?;
+        let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
+        let transaction = store.read_txn()?;
+
+        let mut word = word.to_owned();
+
+        while let Some(found) = fix_alias(transaction.get(&lemma_bucket, word.clone()))? {
+            word = found;
+        }
+
+        Ok(Some(word))
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
@@ -227,14 +222,17 @@ impl Dictionary {
         let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
         let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
         let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
+        let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
 
         let mut transaction = store.write_txn()?;
-        transaction.clear_db(&main_bucket)?;
         transaction.clear_db(&alias_bucket)?;
+        transaction.clear_db(&lemma_bucket)?;
+        transaction.clear_db(&level_bucket)?;
+        transaction.clear_db(&main_bucket)?;
         transaction.commit()?;
 
         let transaction = store.write_txn()?;
-        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket, level_bucket, &self.path);
+        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket, lemma_bucket, level_bucket, &self.path);
         f(&mut writer)?;
         writer.complete()
     }
@@ -270,12 +268,30 @@ impl Dictionary {
 }
 
 
+fn fix(result: Result<DicValue, KvError>) -> AppResult<Option<Entry>> {
+    match result {
+        Ok(found) => Ok(Some(found.inner()?.to_serde())),
+        Err(KvError::NotFound) => Ok(None),
+        Err(err) => Err(AppError::from(err)),
+    }
+}
+
+fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
+    match result {
+        Ok(found) => Ok(Some(found)),
+        Err(KvError::NotFound) => Ok(None),
+        Err(err) => Err(AppError::from(err)),
+    }
+}
+
+
 impl<'a> DictionaryWriter<'a> {
-    fn new<T: AsRef<Path>>(transaction: Txn<'a>, main_bucket: Bucket<'a, String, DicValue>, alias_bucket: Bucket<'a, String, String>, level_bucket: Bucket<'a, String, LevelValue>, path: &'a T) -> Self {
+    fn new<T: AsRef<Path>>(transaction: Txn<'a>, main_bucket: Bucket<'a, String, DicValue>, alias_bucket: Bucket<'a, String, String>, lemma_bucket: Bucket<'a, String, String>, level_bucket: Bucket<'a, String, LevelValue>, path: &'a T) -> Self {
         DictionaryWriter {
             alias_bucket,
             alias_buffer: CatBuffer::default(),
             keys: HashSet::default(),
+            lemma_bucket,
             level_bucket,
             level_buffer: HashMap::default(),
             main_bucket,
@@ -294,9 +310,12 @@ impl<'a> DictionaryWriter<'a> {
         Ok(())
     }
 
-    pub fn alias(&mut self, from: &str, to: &str) -> AppResultU {
+    pub fn alias(&mut self, from: &str, to: &str, for_lemmatization: bool) -> AppResultU {
         if let (Some(from), Some(to)) = (fix_word(from), fix_word(to)) {
-            self.alias_buffer.insert(from, to.to_owned());
+            if for_lemmatization {
+                self.transaction.set(&self.lemma_bucket, from.clone(), to.clone())?;
+            }
+            self.alias_buffer.insert(from, to);
         }
         Ok(())
     }
