@@ -8,6 +8,7 @@ pub mod csv;
 
 use crate::dictionary::Dictionary;
 use crate::errors::{AppResult, AppResultU};
+use crate::str_utils;
 
 
 
@@ -45,14 +46,12 @@ pub fn export<T: AsRef<Path>>(dictionary_path: &T, as_text: bool) -> AppResultU 
 }
 
 fn extract_text(dictionary: &mut Dictionary, s: &str) -> AppResult<Vec<String>> {
-    let splitter = Regex::new(r"[^a-zA-Z]+").unwrap();
-    let words = splitter.split(s).filter(|it| 2 < it.len()).collect::<HashSet<&str>>();
-
     let valid = Regex::new(r"\A[a-zA-Z]{2,}+\z").unwrap();
 
     let mut result = HashSet::new();
-    for word in words {
-        if let Some(found) = dictionary.lemmatize(word)? {
+    let chars = str_utils::simple_words_pattern();
+    for word in chars.find_iter(s) {
+        if let Some(found) = dictionary.lemmatize(word.as_str())? {
             if valid.is_match(&found) {
                 result.insert(found);
             }

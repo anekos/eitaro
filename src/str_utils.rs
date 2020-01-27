@@ -1,6 +1,7 @@
 
 use heck::SnakeCase;
 use kana::wide2ascii;
+use regex::Regex;
 
 
 
@@ -10,6 +11,10 @@ pub enum WordType {
     Katakana,
 }
 
+
+pub fn simple_words_pattern() -> Regex {
+    Regex::new(r"[a-zA-Z]+").unwrap()
+}
 
 pub fn fix_word(s: &str) -> Option<String> {
     let s = wide2ascii(s);

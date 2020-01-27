@@ -4,11 +4,11 @@ use std::fmt;
 use std::io::{stdin, Read};
 use std::path::Path;
 
-use regex::Regex;
 use separator::Separatable;
 
 use crate::dictionary::Dictionary;
 use crate::errors::AppResultU;
+use crate::str_utils;
 
 
 
@@ -21,8 +21,6 @@ enum Level {
 
 struct LevelIter(Level);
 
-
-const CHARS: &str = r"[a-zA-Z]+";
 
 
 pub fn analyze<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
@@ -42,7 +40,7 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
 
     stdin().read_to_string(&mut text)?;
 
-    let chars = Regex::new(CHARS)?;
+    let chars = str_utils::simple_words_pattern();
     for word in chars.find_iter(&text) {
         let word = word.as_str();
         if 2 <= word.len() {
