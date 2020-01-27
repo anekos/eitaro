@@ -141,15 +141,30 @@ impl Dictionary {
    }
 
    pub fn get_level(&mut self, word: &str) -> AppResult<Option<u8>> {
+       fn get_level(tx: &Txn<'_>, bkt: &Bucket<'_, String, LevelValue>, word: &str) -> AppResult<Option<u8>> {
+           match tx.get(&bkt, word.to_owned()) {
+               Ok(found) => Ok(Some(found.inner()?.to_serde())),
+               Err(KvError::NotFound) => Ok(None),
+               Err(err) => Err(AppError::from(err)),
+           }
+       }
+
        let handle = self.manager.open(self.config.clone())?;
        let store = handle.read()?;
        let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
+       let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
        let transaction = store.read_txn()?;
-       match transaction.get(&level_bucket, word.to_owned()) {
-           Ok(found) => Ok(Some(found.inner()?.to_serde())),
-           Err(KvError::NotFound) => Ok(None),
-           Err(err) => Err(AppError::from(err)),
+
+       let found = get_level(&transaction, &level_bucket, word)?;
+       if found.is_some() {
+           return Ok(found)
        }
+
+       if let Some(lemmed) = lemmatize(&transaction, &lemma_bucket, word)? {
+           return get_level(&transaction, &level_bucket, &lemmed);
+       }
+
+       Ok(None)
    }
 
    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
@@ -187,14 +202,7 @@ impl Dictionary {
         let store = handle.read()?;
         let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
         let transaction = store.read_txn()?;
-
-        let mut word = word.to_owned();
-
-        while let Some(found) = fix_alias(transaction.get(&lemma_bucket, word.clone()))? {
-            word = found;
-        }
-
-        Ok(Some(word))
+        lemmatize(&transaction, &lemma_bucket, word)
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
@@ -283,6 +291,15 @@ fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
         Err(err) => Err(AppError::from(err)),
     }
 }
+
+fn lemmatize<'a>(tx: &Txn<'a>, bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<Option<String>> {
+    let mut word = word.to_owned();
+    while let Some(found) = fix_alias(tx.get(&bkt, word.clone()))? {
+        word = found;
+    }
+    Ok(Some(word))
+}
+
 
 
 impl<'a> DictionaryWriter<'a> {
