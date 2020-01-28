@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::io::{stdin, Read};
 use std::path::Path;
@@ -25,6 +25,7 @@ struct LevelIter(Level);
 pub struct Target {
     pub count: bool,
     pub not_in_dictionary: bool,
+    pub out_of_level: bool,
     pub svl: bool,
     pub usage: bool,
 }
@@ -55,6 +56,7 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
         target = Target {
             count: true,
             not_in_dictionary: true,
+            out_of_level: true,
             svl: true,
             usage: true,
         };
@@ -69,8 +71,11 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
     if target.usage {
         analyze_usage(&common)?;
     }
+    if target.out_of_level {
+        analyze_only_given_level(&common, Level::OutOf)?;
+    }
     if target.not_in_dictionary {
-        analyze_not_in_dictionary(&common)?;
+        analyze_only_given_level(&common, Level::NotInDictionary)?;
     }
 
     Ok(())
@@ -200,13 +205,14 @@ fn analyze_svl(common: &Common) -> AppResultU {
     Ok(())
 }
 
-fn analyze_not_in_dictionary(common: &Common) -> AppResultU {
+fn analyze_only_given_level(common: &Common, level: Level) -> AppResultU {
     println!("Words not in dictionary:");
     let mut words: Vec<&str> = common.words.iter()
-        .filter(|it| it.level == Level::NotInDictionary)
+        .filter(|it| it.level == level)
         .map(|it| &*it.word)
         .collect();
     words.sort();
+    let words: BTreeSet<&str> = words.into_iter().collect();
     for word in words {
         println!("{}{}", INDENT, word);
     }

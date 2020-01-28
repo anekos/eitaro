@@ -35,6 +35,7 @@ fn _main() -> AppResultU {
         let target = command::analyze::Target {
             count: all || matches.is_present("count"),
             not_in_dictionary: all || matches.is_present("not-in-dictionary"),
+            out_of_level: all || matches.is_present("out-of-level"),
             svl: all || matches.is_present("svl"),
             usage: all || matches.is_present("usage"),
         };
