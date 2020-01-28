@@ -83,10 +83,8 @@ fn analyze_common(dic: &mut Dictionary, text: &str) -> AppResult<Common> {
     let chars = str_utils::simple_words_pattern();
     for word in chars.find_iter(&text) {
         let word = word.as_str();
-        if 2 <= word.len() {
-            let count = words.entry(word).or_default();
-            *count += 1;
-        }
+        let count = words.entry(word).or_default();
+        *count += 1;
     }
 
     let mut result = Vec::<Word>::new();
@@ -127,8 +125,9 @@ fn analyze_count(common: &Common, text: &str) -> AppResultU {
     }
 
     println!("Count:");
-    println!("{}{:<15}{:>6}", INDENT, "Sentence", sentences);
-    println!("{}{:<15}{:>6}", INDENT, "Word", words);
+    println!("{}{:<17}{:>6}", INDENT, "Sentence", sentences.separated_string());
+    println!("{}{:<17}{:>6}", INDENT, "Word", words.separated_string());
+    println!("{}{:<17}{:>6}", INDENT, "Word (unique)", common.words.len().separated_string());
     println!();
 
     Ok(())
@@ -145,6 +144,10 @@ fn analyze_svl(common: &Common) -> AppResultU {
     let mut cumulative_total = 0;
 
     for word in &common.words {
+        if 2 <= word.word.len() {
+            continue;
+        }
+
         let unique_count = unique_counts.entry(word.level).or_default();
         *unique_count += 1;
         unique_total += 1;
