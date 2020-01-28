@@ -166,6 +166,9 @@ fn connect_events(window: gtk::Window, scroller: &gtk::ScrolledWindow, entry: gt
 
     entry.connect_key_release_event(move |entry, _| {
         if let Some(query) = entry.get_text() {
+            if query.is_empty() {
+                return Inhibit(false);
+            }
             if let Ok(entries) = Dictionary::get_word(&dictionary_path, &query) {
                 thread::spawn(clone_army!([tx, delay] move || {
                     if delay.wait() {
