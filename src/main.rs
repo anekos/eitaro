@@ -30,8 +30,14 @@ fn _main() -> AppResultU {
 
     let dictionary_path = path::get_dictionary_path()?;
 
-    if matches.subcommand_matches("analyze").is_some() {
-        command::analyze::analyze(&dictionary_path)
+    if let Some(ref matches) = matches.subcommand_matches("analyze") {
+        let all = matches.is_present("all");
+        let target = command::analyze::Target {
+            not_in_dictionary: all || matches.is_present("not-in-dictionary"),
+            svl: all || matches.is_present("svl"),
+            usage: all || matches.is_present("usage"),
+        };
+        command::analyze::analyze(&dictionary_path, target)
     } else if let Some(ref matches) = matches.subcommand_matches("build") {
         let files: Vec<&str> = matches.values_of("dictionary-file").unwrap().collect(); // Required
         command::builder::build_dictionary(&files, &dictionary_path)
