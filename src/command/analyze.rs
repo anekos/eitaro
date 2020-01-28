@@ -21,7 +21,9 @@ enum Level {
 
 struct LevelIter(Level);
 
+#[derive(Default, Eq, PartialEq)]
 pub struct Target {
+    pub count: bool,
     pub not_in_dictionary: bool,
     pub svl: bool,
     pub usage: bool,
@@ -41,7 +43,7 @@ struct Word {
 const INDENT: &str = "    ";
 
 
-pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, target: Target) -> AppResultU {
+pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
 
     let mut text = "".to_owned();
@@ -49,6 +51,18 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, target: Target) -> AppResult
 
     let common = analyze_common(&mut dic, &text)?;
 
+    if target == Target::default() {
+        target = Target {
+            count: true,
+            not_in_dictionary: true,
+            svl: true,
+            usage: true,
+        };
+    }
+
+    if target.count {
+        analyze_count(&common, &text)?;
+    }
     if target.svl {
         analyze_svl(&common)?;
     }
@@ -94,6 +108,30 @@ fn analyze_common(dic: &mut Dictionary, text: &str) -> AppResult<Common> {
     }
 
     Ok(Common { words: result })
+}
+
+fn analyze_count(common: &Common, text: &str) -> AppResultU {
+    let mut sentences = 0;
+    let mut words = 0;
+    let mut prev = 'X';
+
+    for c in text.chars() {
+        if prev != '.' && c == '.' {
+            sentences += 1;
+        }
+        prev = c;
+    }
+
+    for word in &common.words {
+        words += word.count;
+    }
+
+    println!("Count:");
+    println!("{}{:<15}{:>6}", INDENT, "Sentence", sentences);
+    println!("{}{:<15}{:>6}", INDENT, "Word", words);
+    println!();
+
+    Ok(())
 }
 
 fn analyze_svl(common: &Common) -> AppResultU {
@@ -161,10 +199,13 @@ fn analyze_svl(common: &Common) -> AppResultU {
 
 fn analyze_not_in_dictionary(common: &Common) -> AppResultU {
     println!("Words not in dictionary:");
-    for word in &common.words {
-        if word.level == Level::NotInDictionary {
-            println!("{}{}", INDENT, word.word);
-        }
+    let mut words: Vec<&str> = common.words.iter()
+        .filter(|it| it.level == Level::NotInDictionary)
+        .map(|it| &*it.word)
+        .collect();
+    words.sort();
+    for word in words {
+        println!("{}{}", INDENT, word);
     }
     println!();
     Ok(())

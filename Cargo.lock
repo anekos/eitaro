@@ -735,6 +735,7 @@ dependencies = [
  "if-let-return 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "kv 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy-init 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
  "lmdb 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pom 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",

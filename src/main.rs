@@ -33,6 +33,7 @@ fn _main() -> AppResultU {
     if let Some(ref matches) = matches.subcommand_matches("analyze") {
         let all = matches.is_present("all");
         let target = command::analyze::Target {
+            count: all || matches.is_present("count"),
             not_in_dictionary: all || matches.is_present("not-in-dictionary"),
             svl: all || matches.is_present("svl"),
             usage: all || matches.is_present("usage"),
@@ -97,6 +98,11 @@ fn _main() -> AppResultU {
 
 fn main() {
     use failure::Fail;
+
+    // Supress `failed printing to stdout: Broken pipe (os error 32)`
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
 
     match _main() {
         Err(AppError::Void) | Ok(_) => (),
