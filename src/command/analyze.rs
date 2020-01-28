@@ -72,10 +72,10 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
         analyze_usage(&common)?;
     }
     if target.out_of_level {
-        analyze_only_given_level(&common, Level::OutOf)?;
+        analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
     }
     if target.not_in_dictionary {
-        analyze_only_given_level(&common, Level::NotInDictionary)?;
+        analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary)?;
     }
 
     Ok(())
@@ -205,8 +205,8 @@ fn analyze_svl(common: &Common) -> AppResultU {
     Ok(())
 }
 
-fn analyze_only_given_level(common: &Common, level: Level) -> AppResultU {
-    println!("Words not in dictionary:");
+fn analyze_only_given_level(common: &Common, name: &str, level: Level) -> AppResultU {
+    println!("{}:", name);
     let mut words: Vec<&str> = common.words.iter()
         .filter(|it| it.level == level)
         .map(|it| &*it.word)
