@@ -71,7 +71,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
         }
         if let Some(r) = right.find('>') {
             writer.alias(&right[0..r], key, false)?;
-            writer.alias(key, &right[0..r], false)?;
+            writer.alias(key, &right[0..r], true)?;
         }
         Ok(())
     }
