@@ -144,7 +144,7 @@ fn analyze_svl(common: &Common) -> AppResultU {
     let mut cumulative_total = 0;
 
     for word in &common.words {
-        if 2 <= word.word.len() {
+        if word.word.len() <= 2 {
             continue;
         }
 
