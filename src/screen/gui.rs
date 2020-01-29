@@ -146,6 +146,10 @@ fn color(out: &mut String, s: &str, fg: &str, bg: Option<&str>, bold: bool) {
 fn connect_events(window: gtk::Window, scroller: &gtk::ScrolledWindow, entry: gtk::Entry, dictionary_path: PathBuf, tx: SyncSender<Option<Vec<Entry>>>) {
     let delay = Delay::new(Duration::from_millis(250));
 
+    window.connect_delete_event(|_, _| {
+        exit(0);
+    });
+
     entry.connect_key_press_event(clone_army!([window, scroller] move |entry, ev| {
         let empty = entry.get_text().map(|it| it.is_empty()).unwrap_or(true);
         let key = to_key_string(&ev);
