@@ -14,6 +14,8 @@ use crate::screen;
 
 
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool, n: Option<usize>) -> AppResultU {
+    pager::Pager::with_default_pager("less -R").setup();
+
     let mut dic = Dictionary::new(dictionary_path);
     lookup_and_print_lines(&mut dic, word, color, n)
 }
