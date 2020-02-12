@@ -33,6 +33,7 @@ pub struct Opt {
 #[derive(StructOpt, Debug)]
 pub enum Command {
     Analyze(command::analyze::Opt),
+    Build(command::builder::Opt),
     Server(command::http::Opt),
 }
 
@@ -50,6 +51,8 @@ fn _main() -> AppResultU {
     match opt.command {
         Analyze(opt) =>
             command::analyze::analyze(opt, &dictionary_path)?,
+        Build(opt) =>
+            command::builder::build_dictionary(opt, &dictionary_path)?,
         Server(opt) =>
             command::http::start_server(opt, dictionary_path)?
     }

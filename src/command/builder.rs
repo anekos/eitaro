@@ -1,7 +1,9 @@
 
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use structopt::StructOpt;
 
 use crate::dictionary::Dictionary;
 use crate::errors::AppError;
@@ -9,15 +11,20 @@ use crate::loader::{csv, eijiro, ejdic, gene, Loader};
 use crate::types::DictionaryFormat;
 
 
+#[derive(StructOpt, Debug)]
+pub struct Opt {
+    files: Vec<PathBuf>,
+}
 
-pub fn build_dictionary<T: AsRef<Path>, U: AsRef<Path>>(files: &[T], dictionary_path: &U) -> Result<(), AppError> {
+
+pub fn build_dictionary<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result<(), AppError> {
     use DictionaryFormat::*;
 
     let mut dictionary = Dictionary::new(dictionary_path);
 
     let stat = dictionary.write(move |mut writer| {
-        for file in files {
-            println!("[{}]", file.as_ref().to_str().unwrap_or("-"));
+        for file in &opt.files {
+            println!("[{}]", file.to_str().unwrap_or("-"));
             let format = guess(file)?;
             let mut file = File::open(file)?;
             match format {
