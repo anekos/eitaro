@@ -320,25 +320,31 @@ fn lemmatize<'a>(tx: &Txn<'a>, bkt: &Bucket<'a, String, String>, word: &str) -> 
 fn stem(word: &str) -> Cow<'_, str> {
     let pairs = [
         ("ied", "y"),
+        ("ier", "y"),
+        ("ies", "y"),
+        ("iest", "y"),
+        ("nning", "n"),
+        ("est", ""),
+        ("ing", ""),
+        ("'s", ""),
         ("ed", ""),
         ("ed", "e"),
-        ("ies", "y"),
-        ("ier", "y"),
         ("er", ""),
-        ("iest", "y"),
-        ("est", ""),
-        ("s", ""),
         ("es", ""),
-        ("'s", ""),
-        ("nning", "n"),
-        ("ing", "")
+        ("s", ""),
     ];
 
+    let wlen = word.len();
+
     for (suffix, to) in &pairs {
+        if wlen < suffix.len() + 2 {
+            break;
+        }
+
         if word.ends_with(suffix) {
             return format!(
                 "{}{}",
-                &word[0 .. word.len() - suffix.len()],
+                &word[0 .. wlen - suffix.len()],
                 to).into();
         }
     }
