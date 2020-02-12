@@ -26,7 +26,7 @@ pub struct LookupOpt {
 }
 
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Default, StructOpt)]
 pub struct ShellOpt {
     #[structopt(short, long)]
     prompt: Option<String>,
