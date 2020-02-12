@@ -11,19 +11,24 @@ use gdk::{DisplayExt, EventMask};
 use glib::markup_escape_text;
 use gtk::prelude::*;
 use gtk::{CssProvider, ScrolledWindow, self, StyleContext};
+use structopt::StructOpt;
 
 use crate::delay::Delay;
 use crate::dictionary::{Definition, Dictionary, Entry, Text};
 
 
 
-pub struct Config {
-    pub dictionary_path: PathBuf,
+#[derive(StructOpt, Debug)]
+#[structopt(name = "server-gui")]
+pub struct Opt {
+    #[structopt(short = "f", long = "font-name")]
     pub font_name: Option<String>,
-    pub font_size: f64,
+    #[structopt(short = "s", long = "font-size")]
+    pub font_size: Option<f64>,
 }
 
-pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>, config: Config) {
+
+pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>, opt: Opt, dictionary_path: PathBuf) {
     gtk::init().unwrap();
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -65,7 +70,9 @@ pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>
     scroller.show();
     window.show();
 
-    connect_events(window, &scroller, entry, config.dictionary_path, tx);
+    connect_events(window, &scroller, entry, dictionary_path, tx);
+
+    let font_size = opt.font_size.unwrap_or(13.0);
 
     loop {
         while gtk::events_pending() {
@@ -74,8 +81,8 @@ pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>
 
         for entries in rx.try_iter() {
             if let Some(entries) = entries {
-                let mut content = format!(r#"<span font="{}""#, config.font_size);
-                if let Some(font_name) = &config.font_name {
+                let mut content = format!(r#"<span font="{}""#, font_size);
+                if let Some(font_name) = &opt.font_name {
                     write!(content, r#"face="{}""#, font_name).unwrap();
                 }
                 write!(content, ">").unwrap();
