@@ -38,6 +38,7 @@ pub enum Command {
     Lemmatize(command::lemmatize::Opt),
     Level(command::level::Opt),
     Lookup(command::lookup::LookupOpt),
+    Path,
     Server(command::http::Opt),
 }
 
@@ -54,24 +55,26 @@ fn _main() -> AppResultU {
 
     match opt.command {
         Analyze(opt) =>
-            command::analyze::analyze(opt, &dictionary_path)?,
+            command::analyze::analyze(opt, &dictionary_path),
         Build(opt) =>
-            command::builder::build_dictionary(opt, &dictionary_path)?,
+            command::builder::build_dictionary(opt, &dictionary_path),
         Export(opt) =>
-            command::export::export(opt, &dictionary_path)?,
+            command::export::export(opt, &dictionary_path),
         Html(opt) =>
-            command::html::lookup(opt, &dictionary_path)?,
+            command::html::lookup(opt, &dictionary_path),
         Interactive(opt) =>
-            command::lookup::shell(opt, &dictionary_path)?,
+            command::lookup::shell(opt, &dictionary_path),
         Lemmatize(opt) =>
-            command::lemmatize::lemmatize(opt, &dictionary_path)?,
+            command::lemmatize::lemmatize(opt, &dictionary_path),
         Level(opt) =>
-            command::level::level(opt, &dictionary_path)?,
+            command::level::level(opt, &dictionary_path),
         Lookup(opt) =>
-            command::lookup::lookup(opt, &dictionary_path)?,
+            command::lookup::lookup(opt, &dictionary_path),
+        Path =>
+            command::path::path(&dictionary_path),
         Server(opt) =>
-            command::http::start_server(opt, dictionary_path)?
-    }
+            command::http::start_server(opt, dictionary_path),
+    }?;
 
     Ok(())
 
