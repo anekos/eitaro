@@ -16,7 +16,7 @@ pub fn build() -> App<'static, 'static> {
                          .short("o")
                          .long("out"))
                     .arg(Arg::with_name("usage")
-                         .help("Usage ranking")
+                         .help("Word usage ranking (without short or level 1 words)")
                          .short("u")
                          .long("usage"))
                     .arg(Arg::with_name("svl")

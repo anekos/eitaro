@@ -69,7 +69,7 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
         analyze_svl(&common)?;
     }
     if target.usage {
-        analyze_usage(&common)?;
+        analyze_usage(&mut dic, &common)?;
     }
     if target.out_of_level {
         analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
@@ -220,12 +220,24 @@ fn analyze_only_given_level(common: &Common, name: &str, level: Level) -> AppRes
     Ok(())
 }
 
-fn analyze_usage(common: &Common) -> AppResultU {
+fn analyze_usage(dictionary: &mut Dictionary, common: &Common) -> AppResultU {
     println!("Usage ranking:");
     let mut words: Vec<(&str, usize)> = common.words.iter().map(|it| (it.word.as_ref(), it.count)).collect();
     words.sort_by(|(_, a), (_, b)| b.cmp(a));
-    for (word, count) in words.iter().take(10) {
+    let mut results = 0;
+    for (word, count) in words.iter() {
+        if word.len() < 3 {
+            continue;
+        }
+        if dictionary.get_level(word)? == Some(1) {
+            continue;
+        }
+
         println!("{}{:10} {:>7}", INDENT, word, count.separated_string());
+        results += 1;
+        if 10 < results {
+            break;
+        }
     }
     println!();
     Ok(())
