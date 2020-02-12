@@ -20,8 +20,6 @@ use crate::errors::{AppError, AppResultU};
 
 
 
-const DEFAULT_PROMPT: &str = "Eitaro> ";
-
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "server")]
@@ -36,6 +34,7 @@ pub enum Command {
     Build(command::builder::Opt),
     Export(command::export::Opt),
     Html(command::html::Opt),
+    Interactive(command::lookup::Opt),
     Server(command::http::Opt),
 }
 
@@ -59,6 +58,8 @@ fn _main() -> AppResultU {
             command::export::export(opt, &dictionary_path)?,
         Html(opt) =>
             command::html::lookup(opt, &dictionary_path)?,
+        Interactive(opt) =>
+            command::lookup::shell(opt, &dictionary_path)?,
         Server(opt) =>
             command::http::start_server(opt, dictionary_path)?
     }

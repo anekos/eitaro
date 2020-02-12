@@ -4,6 +4,7 @@ use std::io::{stdin, stdout, Write};
 use std::path::Path;
 
 use rustyline;
+use structopt::StructOpt;
 
 use crate::dictionary::Dictionary;
 use crate::errors::{AppResult, AppResultU};
@@ -12,13 +13,22 @@ use crate::screen;
 
 
 
+const DEFAULT_PROMPT: &str = "Eitaro> ";
+
+
+#[derive(Debug, StructOpt)]
+pub struct Opt {
+    #[structopt(short, long)]
+    prompt: Option<String>,
+}
+
 
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool, n: Option<usize>) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
     lookup_and_print_lines(&mut dic, word, color, n, true)
 }
 
-pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
+pub fn shell<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> AppResultU {
     let config = rustyline::config::Builder::new()
         .auto_add_history(true)
         .build();
@@ -26,8 +36,9 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
     editor.load_history(&get_history_path()?)?;
 
     let mut dic = Dictionary::new(dictionary_path);
+    let prompt = opt.prompt.unwrap_or_else(|| DEFAULT_PROMPT.to_owned());
     loop {
-        match editor.readline(prompt) {
+        match editor.readline(&prompt) {
             Ok(ref input) => {
                 let input = input.trim();
                 if input.is_empty() {
