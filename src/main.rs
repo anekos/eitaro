@@ -35,6 +35,7 @@ pub enum Command {
     Export(command::export::Opt),
     Html(command::html::Opt),
     Interactive(command::lookup::Opt),
+    Lemmatize(command::lemmatize::Opt),
     Server(command::http::Opt),
 }
 
@@ -60,6 +61,8 @@ fn _main() -> AppResultU {
             command::html::lookup(opt, &dictionary_path)?,
         Interactive(opt) =>
             command::lookup::shell(opt, &dictionary_path)?,
+        Lemmatize(opt) =>
+            command::lemmatize::lemmatize(opt, &dictionary_path)?,
         Server(opt) =>
             command::http::start_server(opt, dictionary_path)?
     }
