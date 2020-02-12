@@ -1,4 +1,5 @@
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
 use std::fs::OpenOptions;
@@ -129,10 +130,19 @@ impl Dictionary {
             result.push(entry);
         }
 
-        if_let_some!(aliases = fix_alias(transaction.get(&alias_bucket, word.to_owned()))?, Ok(opt(result)));
-        for alias in aliases.split('\n') {
-            if alias != word {
-                if_let_some!(entry = fix(transaction.get(&main_bucket, alias.to_owned()))?, Ok(opt(result)));
+        if let Some(aliases) = fix_alias(transaction.get(&alias_bucket, word.to_owned()))? {
+            for alias in aliases.split('\n') {
+                if alias != word {
+                    if let Some(entry) = fix(transaction.get(&main_bucket, alias.to_owned()))? {
+                        result.push(entry);
+                    }
+                }
+            }
+        }
+
+        if result.is_empty() {
+            let stemmed = stem(&word).to_string();
+            if let Some(entry) = fix(transaction.get(&main_bucket, stemmed))? {
                 result.push(entry);
             }
         }
@@ -304,8 +314,38 @@ fn lemmatize<'a>(tx: &Txn<'a>, bkt: &Bucket<'a, String, String>, word: &str) -> 
         }
         word = found;
     }
-    Ok(Some(word))
+    Ok(Some(stem(&word).to_string()))
 }
+
+fn stem(word: &str) -> Cow<'_, str> {
+    let pairs = [
+        ("ied", "y"),
+        ("ed", ""),
+        ("ed", "e"),
+        ("ies", "y"),
+        ("ier", "y"),
+        ("er", ""),
+        ("iest", "y"),
+        ("est", ""),
+        ("s", ""),
+        ("es", ""),
+        ("'s", ""),
+        ("nning", "n"),
+        ("ing", "")
+    ];
+
+    for (suffix, to) in &pairs {
+        if word.ends_with(suffix) {
+            return format!(
+                "{}{}",
+                &word[0 .. word.len() - suffix.len()],
+                to).into();
+        }
+    }
+
+    word.into()
+}
+
 
 
 
