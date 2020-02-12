@@ -14,10 +14,8 @@ use crate::screen;
 
 
 pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool, n: Option<usize>) -> AppResultU {
-    pager::Pager::with_default_pager("less -R").setup();
-
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, word, color, n)
+    lookup_and_print_lines(&mut dic, word, color, n, true)
 }
 
 pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
@@ -35,7 +33,7 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
                 if input.is_empty() {
                     continue;
                 }
-                lookup_and_print_lines(&mut dic, input, true, None)?;
+                lookup_and_print_lines(&mut dic, input, true, None, false)?;
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
@@ -50,20 +48,23 @@ pub fn shell<T: AsRef<Path>>(dictionary_path: &T, prompt: &str) -> AppResultU {
     Ok(())
 }
 
-fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Option<usize>) -> AppResultU {
+fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Option<usize>, pager: bool) -> AppResultU {
     for line in s.lines() {
-        lookup_and_print(dic, line, color, limit, true)?;
+        lookup_and_print(dic, line, color, limit, true, pager)?;
     }
     Ok(())
 }
 
-fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option<usize>, correction: bool) -> AppResultU {
+fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option<usize>, correction: bool, pager: bool) -> AppResultU {
     let mut found = dic.get_smart(word.trim())?;
     if let Some(limit) = limit {
         found = found.map(|it| it.into_iter().take(limit).collect());
     }
 
     if let Some(found) = found {
+        if pager {
+            setup_pager();
+        }
         if color {
             screen::color::print(found)?;
         } else {
@@ -74,7 +75,7 @@ fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option
 
     if correction {
         if let Some(found) = untypo(dic, word)? {
-            return lookup_and_print(dic, &found, color, limit, false);
+            return lookup_and_print(dic, &found, color, limit, false, pager);
         }
     }
 
@@ -131,4 +132,8 @@ fn append_history(line: &str) -> AppResultU {
     let mut file = OpenOptions::new().write(true).append(true).create(true).open(path)?;
     writeln!(file, "{}", line)?;
     Ok(())
+}
+
+fn setup_pager() {
+    pager::Pager::with_default_pager("less --quit-if-one-screen --RAW-CONTROL-CHARS").setup();
 }
