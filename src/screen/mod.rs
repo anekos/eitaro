@@ -16,19 +16,15 @@ use crate::dictionary::Entry;
 
 #[derive(StructOpt, Debug)]
 pub enum Opt {
+    /// Color
     Color,
-    Curses(CursesOpt),
+    /// Curses
+    Curses(curses::Opt),
+    /// GUI
     Gui(gui::Opt),
+    /// Plain
     Plain,
 }
-
-#[derive(StructOpt, Debug)]
-pub struct CursesOpt {
-    #[structopt(short, long)]
-    kuru: bool,
-}
-
-
 
 #[derive(Clone)]
 pub struct Screen {
@@ -44,8 +40,8 @@ impl Screen {
         let screen = Screen { tx: tx.clone() };
 
         spawn(move || match opt {
-            Curses(c) =>
-                curses::main(&rx, c.kuru, &bind_to),
+            Curses(opt) =>
+                curses::main(&rx, opt, &bind_to),
             Color =>
                 color::main(rx).unwrap(),
             Gui(opt) =>

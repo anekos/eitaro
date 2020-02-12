@@ -21,8 +21,10 @@ use crate::dictionary::{Definition, Dictionary, Entry, Text};
 #[derive(StructOpt, Debug)]
 #[structopt(name = "server-gui")]
 pub struct Opt {
+    /// Font name
     #[structopt(short = "f", long = "font-name")]
     pub font_name: Option<String>,
+    /// Font size
     #[structopt(short = "s", long = "font-size")]
     pub font_size: Option<f64>,
 }

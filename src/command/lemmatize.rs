@@ -10,6 +10,7 @@ use crate::errors::AppResultU;
 
 #[derive(Debug, StructOpt)]
 pub struct Opt {
+    /// Word
     word: String,
 }
 

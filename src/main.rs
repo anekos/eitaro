@@ -3,7 +3,6 @@ use std::process::exit;
 
 use structopt::StructOpt;
 
-mod args;
 mod command;
 mod correction;
 mod delay;
@@ -30,16 +29,27 @@ pub struct Opt {
 
 #[derive(StructOpt, Debug)]
 pub enum Command {
+    /// Analyze text (STDIN) using SVL
     Analyze(command::analyze::Opt),
+    /// Build dictionary
     Build(command::builder::Opt),
+    /// Export the definitions for the given words (STDIN)
     Export(command::export::Opt),
+    /// Output HTML fragment
     Html(command::html::Opt),
+    /// Interactive shell
     Interactive(command::lookup::ShellOpt),
+    /// Lemmatize
     Lemmatize(command::lemmatize::Opt),
+    /// Get word level (SVL)
     Level(command::level::Opt),
+    /// Lookup
     Lookup(command::lookup::LookupOpt),
+    /// Display the file paths using by eitaro
     Path,
+    /// HTTP Server
     Server(command::http::Opt),
+    /// Untypo
     Untypo(command::untypo::Opt),
 }
 

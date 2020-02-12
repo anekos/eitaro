@@ -24,14 +24,19 @@ struct LevelIter(Level);
 
 #[derive(Debug, Default, Eq, PartialEq, StructOpt)]
 pub struct Opt {
+    /// Count sentences and words
     #[structopt(short, long)]
     pub count: bool,
+    /// Words not in dictionary
     #[structopt(short = "n", long = "not-in")]
     pub not_in_dictionary: bool,
+    /// Words not in SVL
     #[structopt(short = "o", long = "out")]
     pub out_of_level: bool,
+    /// Word level using SVL
     #[structopt(short, long)]
     pub svl: bool,
+    /// Word usage ranking (without short or level 1 words)
     #[structopt(short, long)]
     pub usage: bool,
 }

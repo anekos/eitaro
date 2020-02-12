@@ -18,9 +18,12 @@ const DEFAULT_PROMPT: &str = "Eitaro> ";
 
 #[derive(Debug, StructOpt)]
 pub struct LookupOpt {
+    /// Word
     word: String,
+    /// Color
     #[structopt(short, long)]
-    color: bool,
+    color: Option<bool>,
+    /// Take only n entries
     #[structopt(short, long)]
     n: Option<usize>
 }
@@ -28,6 +31,7 @@ pub struct LookupOpt {
 
 #[derive(Debug, Default, StructOpt)]
 pub struct ShellOpt {
+    /// Prompt text
     #[structopt(short, long)]
     prompt: Option<String>,
 }
@@ -35,7 +39,7 @@ pub struct ShellOpt {
 
 pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, &opt.word, opt.color, opt.n, true)
+    lookup_and_print_lines(&mut dic, &opt.word, opt.color.unwrap_or(true), opt.n, true)
 }
 
 pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {

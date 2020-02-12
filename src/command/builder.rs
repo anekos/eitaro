@@ -13,6 +13,7 @@ use crate::types::DictionaryFormat;
 
 #[derive(StructOpt, Debug)]
 pub struct Opt {
+    /// Dictionary files
     files: Vec<PathBuf>,
 }
 

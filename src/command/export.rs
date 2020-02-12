@@ -15,6 +15,7 @@ use crate::str_utils;
 
 #[derive(Debug, StructOpt)]
 pub struct Opt {
+    /// Extract words from input as text
     #[structopt(short = "t", long = "as-text")]
     as_text: bool,
 }

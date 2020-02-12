@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use easycurses::{colorpair, ColorPair, CursorVisibility, EasyCurses, Input, TimeoutMode};
 use if_let_return::if_let_some;
+use structopt::StructOpt;
 
 use crate::dictionary::{Entry, Text};
 
@@ -13,7 +14,16 @@ use crate::dictionary::{Entry, Text};
 const FACES: [&str;6] = ["(ﾟДﾟ)" , "( ﾟД)" , "(  ﾟ)" , "(   )" , "(ﾟ  )" , "(Дﾟ )"];
 
 
-pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
+#[derive(StructOpt, Debug)]
+pub struct Opt {
+    /// Enable kuru-kuru head
+    #[structopt(short, long)]
+    kuru: bool,
+}
+
+
+
+pub fn main(rx: &Receiver<Option<Vec<Entry>>>, opt: Opt, bind_to: &str) {
     use easycurses::Color::*;
 
     fn color_key(out: &mut EasyCurses, key: &str) {
@@ -114,14 +124,14 @@ pub fn main(rx: &Receiver<Option<Vec<Entry>>>, kuru: bool, bind_to: &str) {
 
             if let Some(input) = out.get_input() {
                 match input {
-                    Input::Character(' ') if kuru => bullets.push((face_col + 2, 0)),
+                    Input::Character(' ') if opt.kuru => bullets.push((face_col + 2, 0)),
                     Input::Character('q') => break,
                     _ => (),
                 }
             }
 
             // Kuru-Kuru Face
-            if kuru {
+            if opt.kuru {
                 if let Some(size) = &screen_size {
                     let (rows, cols) = (i32::from(size.rows), i32::from(size.cols));
                     let (row, _col) = rc;

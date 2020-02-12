@@ -15,9 +15,12 @@ use crate::screen::{Screen, Opt as ScreenOpt};
 #[derive(StructOpt, Debug)]
 #[structopt(name = "server")]
 pub struct Opt {
+    /// "host:port" to listen
     pub bind_to: Option<String>,
+    /// Ignore not found
     #[structopt(short = "i", long = "ignore")]
     pub ignore_not_found: bool,
+    /// Output to
     #[structopt(subcommand)]
     pub screen: ScreenOpt,
 }
