@@ -135,5 +135,5 @@ fn append_history(line: &str) -> AppResultU {
 }
 
 fn setup_pager() {
-    pager::Pager::with_default_pager("less --quit-if-one-screen --RAW-CONTROL-CHARS").setup();
+    pager::Pager::with_default_pager("less --quit-if-one-screen --RAW-CONTROL-CHARS --no-init").setup();
 }
