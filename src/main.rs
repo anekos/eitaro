@@ -34,9 +34,10 @@ pub enum Command {
     Build(command::builder::Opt),
     Export(command::export::Opt),
     Html(command::html::Opt),
-    Interactive(command::lookup::Opt),
+    Interactive(command::lookup::ShellOpt),
     Lemmatize(command::lemmatize::Opt),
     Level(command::level::Opt),
+    Lookup(command::lookup::LookupOpt),
     Server(command::http::Opt),
 }
 
@@ -66,6 +67,8 @@ fn _main() -> AppResultU {
             command::lemmatize::lemmatize(opt, &dictionary_path)?,
         Level(opt) =>
             command::level::level(opt, &dictionary_path)?,
+        Lookup(opt) =>
+            command::lookup::lookup(opt, &dictionary_path)?,
         Server(opt) =>
             command::http::start_server(opt, dictionary_path)?
     }

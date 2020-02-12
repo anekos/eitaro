@@ -17,18 +17,28 @@ const DEFAULT_PROMPT: &str = "Eitaro> ";
 
 
 #[derive(Debug, StructOpt)]
-pub struct Opt {
+pub struct LookupOpt {
+    word: String,
+    #[structopt(short, long)]
+    color: bool,
+    #[structopt(short, long)]
+    n: Option<usize>
+}
+
+
+#[derive(Debug, StructOpt)]
+pub struct ShellOpt {
     #[structopt(short, long)]
     prompt: Option<String>,
 }
 
 
-pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str, color: bool, n: Option<usize>) -> AppResultU {
+pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, word, color, n, true)
+    lookup_and_print_lines(&mut dic, &opt.word, opt.color, opt.n, true)
 }
 
-pub fn shell<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> AppResultU {
+pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
     let config = rustyline::config::Builder::new()
         .auto_add_history(true)
         .build();
