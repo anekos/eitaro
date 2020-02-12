@@ -34,6 +34,8 @@ pub struct Opt {
 pub enum Command {
     Analyze(command::analyze::Opt),
     Build(command::builder::Opt),
+    Export(command::export::Opt),
+    Html(command::html::Opt),
     Server(command::http::Opt),
 }
 
@@ -53,6 +55,10 @@ fn _main() -> AppResultU {
             command::analyze::analyze(opt, &dictionary_path)?,
         Build(opt) =>
             command::builder::build_dictionary(opt, &dictionary_path)?,
+        Export(opt) =>
+            command::export::export(opt, &dictionary_path)?,
+        Html(opt) =>
+            command::html::lookup(opt, &dictionary_path)?,
         Server(opt) =>
             command::http::start_server(opt, dictionary_path)?
     }

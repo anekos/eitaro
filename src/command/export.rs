@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, BufWriter, Read, stdin, stdout, Write};
 use std::path::Path;
 
 use regex::Regex;
+use structopt::StructOpt;
 
 pub mod csv;
 
@@ -12,12 +13,18 @@ use crate::str_utils;
 
 
 
+#[derive(Debug, StructOpt)]
+pub struct Opt {
+    #[structopt(short = "t", long = "as-text")]
+    as_text: bool,
+}
+
 trait Exporter {
     fn export<T: Write>(&self, dictionary: &mut Dictionary, words: &[&str], out: &mut T) -> AppResultU;
 }
 
 
-pub fn export<T: AsRef<Path>>(dictionary_path: &T, as_text: bool) -> AppResultU {
+pub fn export<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> AppResultU {
     let mut dictionary = Dictionary::new(dictionary_path);
     let exporter = csv::CsvExporter();
 
@@ -28,7 +35,7 @@ pub fn export<T: AsRef<Path>>(dictionary_path: &T, as_text: bool) -> AppResultU 
     let input = stdin();
     let input = input.lock();
     let mut reader = BufReader::new(input);
-    if as_text {
+    if opt.as_text {
         let mut buffer = "".to_owned();
         reader.read_to_string(&mut buffer)?;
         let words = extract_text(&mut dictionary, &buffer)?;
