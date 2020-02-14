@@ -62,7 +62,6 @@ fn _main() -> AppResultU {
     let dictionary_path = path::get_dictionary_path()?;
 
     let opt = Opt::from_args();
-    println!("{:?}", opt);
 
     if let Some(command) = opt.command {
         match command {
