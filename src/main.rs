@@ -55,6 +55,8 @@ pub enum Command {
     Shell(command::lookup::ShellOpt),
     /// Untypo
     Untypo(command::untypo::Opt),
+    /// Extract lemmatized words
+    Words(command::words::Opt),
 }
 
 
@@ -93,6 +95,8 @@ fn _main() -> AppResultU {
                 command::http::start_server(opt, dictionary_path),
             Untypo(opt) =>
                 command::untypo::untypo(opt, &dictionary_path),
+            Words(opt) =>
+                command::words::extract(opt, &dictionary_path),
         }
     } else {
         command::lookup::shell(command::lookup::ShellOpt::default(), &dictionary_path)

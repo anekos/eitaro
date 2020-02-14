@@ -10,3 +10,4 @@ pub mod level;
 pub mod lookup;
 pub mod path;
 pub mod untypo;
+pub mod words;
