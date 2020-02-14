@@ -3,15 +3,22 @@ use std::io::{BufWriter, Error as IOError, stdout, Write};
 use std::path::Path;
 
 use askama_escape::{escape, Html};
+use structopt::StructOpt;
 
 use crate::dictionary::{Dictionary, Entry, Text};
 use crate::errors::AppError;
 
 
 
-pub fn lookup<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<(), AppError> {
+#[derive(Debug, StructOpt)]
+pub struct Opt {
+    /// Word
+    word: String,
+}
+
+pub fn lookup<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result<(), AppError> {
     let mut dic = Dictionary::new(dictionary_path);
-    let found = dic.get_smart(word.trim())?.ok_or(AppError::NotFound)?;
+    let found = dic.get_smart(opt.word.trim())?.ok_or(AppError::NotFound)?;
     print(found)?;
     Ok(())
 }

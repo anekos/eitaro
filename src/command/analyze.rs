@@ -5,6 +5,7 @@ use std::io::{stdin, Read};
 use std::path::Path;
 
 use separator::Separatable;
+use structopt::StructOpt;
 
 use crate::dictionary::Dictionary;
 use crate::errors::{AppResult, AppResultU};
@@ -21,12 +22,22 @@ enum Level {
 
 struct LevelIter(Level);
 
-#[derive(Default, Eq, PartialEq)]
-pub struct Target {
+#[derive(Debug, Default, Eq, PartialEq, StructOpt)]
+pub struct Opt {
+    /// Count sentences and words
+    #[structopt(short, long)]
     pub count: bool,
+    /// Words not in dictionary
+    #[structopt(short = "n", long = "not-in")]
     pub not_in_dictionary: bool,
+    /// Words not in SVL
+    #[structopt(short = "o", long = "out")]
     pub out_of_level: bool,
+    /// Word level using SVL
+    #[structopt(short, long)]
     pub svl: bool,
+    /// Word usage ranking (without short or level 1 words)
+    #[structopt(short, long)]
     pub usage: bool,
 }
 
@@ -44,7 +55,7 @@ struct Word {
 const INDENT: &str = "    ";
 
 
-pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppResultU {
+pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
 
     let mut text = "".to_owned();
@@ -52,8 +63,8 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
 
     let common = analyze_common(&mut dic, &text)?;
 
-    if target == Target::default() {
-        target = Target {
+    if opt == Opt::default() {
+        opt = Opt {
             count: true,
             not_in_dictionary: true,
             out_of_level: true,
@@ -62,19 +73,19 @@ pub fn analyze<T: AsRef<Path>>(dictionary_path: &T, mut target: Target) -> AppRe
         };
     }
 
-    if target.count {
+    if opt.count {
         analyze_count(&common, &text)?;
     }
-    if target.svl {
+    if opt.svl {
         analyze_svl(&common)?;
     }
-    if target.usage {
+    if opt.usage {
         analyze_usage(&mut dic, &common)?;
     }
-    if target.out_of_level {
+    if opt.out_of_level {
         analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
     }
-    if target.not_in_dictionary {
+    if opt.not_in_dictionary {
         analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary)?;
     }
 

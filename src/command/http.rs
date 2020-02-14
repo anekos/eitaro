@@ -4,24 +4,32 @@ use std::path::PathBuf;
 use actix_cors::Cors;
 use actix_web::{App,  HttpServer, Responder, web, http::header};
 use serde_derive::*;
+use structopt::StructOpt;
 
 use crate::dictionary::Dictionary;
 use crate::errors::AppError;
-use crate::screen::{Screen, ScreenConfig};
+use crate::screen::{Screen, Opt as ScreenOpt};
 
 
 
-pub struct Config {
-    pub dictionary_path: PathBuf,
+#[derive(StructOpt, Debug)]
+#[structopt(name = "server")]
+pub struct Opt {
+    /// "host:port" to listen
+    pub bind_to: Option<String>,
+    /// Ignore not found
+    #[structopt(short = "i", long = "ignore")]
     pub ignore_not_found: bool,
-    pub screen: Option<ScreenConfig>,
+    /// Output to
+    #[structopt(subcommand)]
+    pub screen: ScreenOpt,
 }
 
 #[derive(Clone)]
 struct State {
     pub dictionary_path: PathBuf,
     pub ignore_not_found: bool,
-    pub screen: Option<Screen>,
+    pub screen: Screen,
 }
 
 #[derive(Deserialize)]
@@ -29,11 +37,12 @@ pub struct GetWord {
     word: String,
 }
 
-pub fn start_server(bind_to: &str, config: Config) -> Result<(), AppError> {
+pub fn start_server(opt: Opt, dictionary_path: PathBuf) -> Result<(), AppError> {
+    let bind_to = opt.bind_to.unwrap_or_else(|| "127.0.0.1:8116".to_owned());
     let state = State {
-        dictionary_path: config.dictionary_path,
-        ignore_not_found: config.ignore_not_found,
-        screen: config.screen.map(|config| Screen::new(config, bind_to.to_owned()))
+        dictionary_path: dictionary_path.clone(),
+        ignore_not_found: opt.ignore_not_found,
+        screen: Screen::new(opt.screen, dictionary_path, bind_to.clone())
     };
     let server = HttpServer::new(move || {
         let state= state.clone();
@@ -65,10 +74,8 @@ fn on_ack() -> impl Responder {
 fn on_get_word(state: web::Data<State>, param: web::Path<GetWord>) -> impl Responder {
     match Dictionary::get_word(&state.dictionary_path, &param.word) {
         Ok(entries) => {
-            if let Some(screen) = &state.screen {
-                if !state.ignore_not_found || entries.is_some() {
-                    screen.print_opt(entries.clone());
-                }
+            if !state.ignore_not_found || entries.is_some() {
+                state.screen.print_opt(entries.clone());
             }
             if let Some(entries) = entries {
                 let mut content = vec![];

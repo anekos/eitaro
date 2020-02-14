@@ -1,14 +1,23 @@
 
 use std::path::Path;
 
+use structopt::StructOpt;
+
 use crate::dictionary::Dictionary;
 use crate::errors::AppResultU;
 
 
 
-pub fn level<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> AppResultU {
+#[derive(Debug, StructOpt)]
+pub struct Opt {
+    /// Level
+    word: String,
+}
+
+
+pub fn level<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    if let Some(found) = dic.get_level(word)? {
+    if let Some(found) = dic.get_level(&opt.word)? {
         println!("{}", found);
     } else {
         eprintln!("Not available");
