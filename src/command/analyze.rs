@@ -38,7 +38,7 @@ pub struct Opt {
     pub svl: bool,
     /// Word usage ranking (without short or level 1 words)
     #[structopt(short, long)]
-    pub usage: bool,
+    pub usage: Option<usize>,
 }
 
 struct Common {
@@ -69,7 +69,7 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
             not_in_dictionary: true,
             out_of_level: true,
             svl: true,
-            usage: true,
+            usage: Some(20),
         };
     }
 
@@ -79,8 +79,8 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
     if opt.svl {
         analyze_svl(&common)?;
     }
-    if opt.usage {
-        analyze_usage(&mut dic, &common)?;
+    if let Some(n) = opt.usage {
+        analyze_usage(&mut dic, &common, n)?;
     }
     if opt.out_of_level {
         analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
@@ -231,7 +231,7 @@ fn analyze_only_given_level(common: &Common, name: &str, level: Level) -> AppRes
     Ok(())
 }
 
-fn analyze_usage(dictionary: &mut Dictionary, common: &Common) -> AppResultU {
+fn analyze_usage(dictionary: &mut Dictionary, common: &Common, n: usize) -> AppResultU {
     println!("Usage ranking:");
     let mut words: Vec<(&str, usize)> = common.words.iter().map(|it| (it.word.as_ref(), it.count)).collect();
     words.sort_by(|(_, a), (_, b)| b.cmp(a));
@@ -246,7 +246,7 @@ fn analyze_usage(dictionary: &mut Dictionary, common: &Common) -> AppResultU {
 
         println!("{}{:10} {:>7}", INDENT, word, count.separated_string());
         results += 1;
-        if 10 < results {
+        if n <= results {
             break;
         }
     }
