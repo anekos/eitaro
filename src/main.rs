@@ -35,6 +35,8 @@ pub enum Command {
     Analyze(command::analyze::Opt),
     /// Build dictionary
     Build(command::builder::Opt),
+    /// Generate completions script for this command
+    Completions(command::completions::Opt),
     /// Export the definitions for the given words (STDIN)
     Export(command::export::Opt),
     /// Output HTML fragment
@@ -71,6 +73,8 @@ fn _main() -> AppResultU {
                 command::analyze::analyze(opt, &dictionary_path),
             Build(opt) =>
                 command::builder::build_dictionary(opt, &dictionary_path),
+            Completions(opt) =>
+                command::completions::generate(opt, Opt::clap()),
             Export(opt) =>
                 command::export::export(opt, &dictionary_path),
             Html(opt) =>
