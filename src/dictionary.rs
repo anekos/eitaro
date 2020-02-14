@@ -161,6 +161,7 @@ impl Dictionary {
 
        let handle = self.manager.open(self.config.clone())?;
        let store = handle.read()?;
+       let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
        let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
        let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
        let transaction = store.read_txn()?;
@@ -170,11 +171,8 @@ impl Dictionary {
            return Ok(found)
        }
 
-       if let Some(lemmed) = lemmatize(&transaction, &lemma_bucket, word)? {
-           return get_level(&transaction, &level_bucket, &lemmed);
-       }
-
-       Ok(None)
+       let lemmed = lemmatize(&transaction, &main_bucket, &lemma_bucket, word)?;
+       get_level(&transaction, &level_bucket, &lemmed)
    }
 
    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
@@ -207,12 +205,13 @@ impl Dictionary {
         Ok(None)
     }
 
-    pub fn lemmatize(&mut self, word: &str) -> AppResult<Option<String>> {
+    pub fn lemmatize(&mut self, word: &str) -> AppResult<String> {
         let handle = self.manager.open(self.config.clone())?;
         let store = handle.read()?;
+        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
         let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
         let transaction = store.read_txn()?;
-        lemmatize(&transaction, &lemma_bucket, word)
+        lemmatize(&transaction, &main_bucket, &lemma_bucket, word)
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
@@ -302,19 +301,23 @@ fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
     }
 }
 
-fn lemmatize<'a>(tx: &Txn<'a>, bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<Option<String>> {
+fn lemmatize<'a>(tx: &Txn<'a>, main_bkt: &Bucket<'a, String, DicValue>, lemma_bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<String> {
     let mut word = word.to_owned();
     let mut path = HashSet::<String>::new();
 
-    path.insert(word.clone());
-
-    while let Some(found) = fix_alias(tx.get(&bkt, word.clone()))? {
+    while let Some(found) = fix_alias(tx.get(&lemma_bkt, word.clone()))? {
         if !path.insert(found.clone()) {
-            return Ok(Some(word))
+            return Ok(word)
         }
         word = found;
     }
-    Ok(Some(stem(&word).to_string()))
+
+    let stemmed = stem(&word);
+    if fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some() {
+        Ok(stemmed.to_string())
+    } else {
+        Ok(word.to_owned())
+    }
 }
 
 fn stem(word: &str) -> Cow<'_, str> {

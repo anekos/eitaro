@@ -17,8 +17,6 @@ pub struct Opt {
 
 pub fn lemmatize<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    if let Some(found) = dic.lemmatize(&opt.word)? {
-        println!("{}", found);
-    }
+    println!("{}", dic.lemmatize(&opt.word)?);
     Ok(())
 }

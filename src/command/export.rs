@@ -66,10 +66,9 @@ fn extract_text(dictionary: &mut Dictionary, s: &str) -> AppResult<Vec<String>> 
     let mut result = Vec::<String>::new();
 
     for word in words {
-        if let Some(found) = dictionary.lemmatize(word)? {
-            if 2 < found.len() && valid.is_match(&found) {
-                result.push(found);
-            }
+        let lemmed = dictionary.lemmatize(word)?;
+        if 2 < lemmed.len() && valid.is_match(&lemmed) {
+            result.push(lemmed);
         }
     }
 
