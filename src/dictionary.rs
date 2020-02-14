@@ -1,5 +1,4 @@
 
-use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
 use std::fs::OpenOptions;
@@ -141,9 +140,10 @@ impl Dictionary {
         }
 
         if result.is_empty() {
-            let stemmed = stem(&word).to_string();
-            if let Some(entry) = fix(transaction.get(&main_bucket, stemmed))? {
-                result.push(entry);
+            for stemmed in stem(&word) {
+                if let Some(entry) = fix(transaction.get(&main_bucket, stemmed))? {
+                    result.push(entry);
+                }
             }
         }
 
@@ -302,29 +302,30 @@ fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
 }
 
 fn lemmatize<'a>(tx: &Txn<'a>, main_bkt: &Bucket<'a, String, DicValue>, lemma_bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<String> {
-    let mut unaliased = word.to_owned();
+    let mut lemmed = word.to_owned();
     let mut path = HashSet::<String>::new();
 
-    while let Some(found) = fix_alias(tx.get(&lemma_bkt, unaliased.clone()))? {
+    while let Some(found) = fix_alias(tx.get(&lemma_bkt, lemmed.clone()))? {
         if !path.insert(found.clone()) {
-            return Ok(unaliased)
+            return Ok(lemmed)
         }
-        unaliased = found;
+        lemmed = found;
     }
 
-    let stemmed = stem(&unaliased);
-
-    let stemmed_in_dic = fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some();
-    let unaliased_in_dic = fix(tx.get(&main_bkt, unaliased.clone()))?.is_some();
-
-    if stemmed_in_dic || !unaliased_in_dic {
-        Ok(stemmed.to_string())
-    } else {
-        Ok(unaliased.to_owned())
+    if fix(tx.get(&main_bkt, lemmed.clone()))?.is_some() {
+        return Ok(lemmed.to_owned());
     }
+
+    for stemmed in stem(&lemmed) {
+        if fix(tx.get(&main_bkt, stemmed.clone()))?.is_some() {
+            return Ok(stemmed);
+        }
+    }
+
+    Ok(lemmed.to_owned())
 }
 
-fn stem(word: &str) -> Cow<'_, str> {
+fn stem(word: &str) -> Vec<String> {
     let pairs = [
         ("ied", "y"),
         ("ier", "y"),
@@ -341,6 +342,7 @@ fn stem(word: &str) -> Cow<'_, str> {
         ("s", ""),
     ];
 
+    let mut result = vec![];
     let wlen = word.len();
 
     for (suffix, to) in &pairs {
@@ -349,14 +351,11 @@ fn stem(word: &str) -> Cow<'_, str> {
         }
 
         if word.ends_with(suffix) {
-            return format!(
-                "{}{}",
-                &word[0 .. wlen - suffix.len()],
-                to).into();
+            result.push(format!("{}{}", &word[0 .. wlen - suffix.len()], to));
         }
     }
 
-    word.into()
+    result
 }
 
 
