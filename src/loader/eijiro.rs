@@ -56,6 +56,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
 
         let right = right.replace('（', "").replace('）', "");
         extract(writer, key, &right, WordType::English, "【変化】", true)?;
+        // cat-o'-nine-tails
         extract(writer, key, &right, WordType::English, "【同】", false)?;
         extract(writer, key, &right, WordType::Katakana, "【＠】", false)?;
         extract(writer, key, &right, WordType::English, "【略】", false)
@@ -71,7 +72,8 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
         }
         if let Some(r) = right.find('>') {
             writer.alias(&right[0..r], key, false)?;
-            writer.alias(key, &right[0..r], true)?;
+            // cat-o'-nine-tails
+            writer.alias(key, &right[0..r], false)?;
         }
         Ok(())
     }
