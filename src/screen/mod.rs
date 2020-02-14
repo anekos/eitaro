@@ -4,6 +4,7 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use std::thread::spawn;
 
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
 mod curses;
 pub mod color;
@@ -15,6 +16,7 @@ use crate::dictionary::Entry;
 
 
 #[derive(StructOpt, Debug)]
+#[structopt(setting = AppSettings::InferSubcommands)]
 pub enum Opt {
     /// Color
     Color,

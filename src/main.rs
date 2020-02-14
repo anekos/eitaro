@@ -2,6 +2,7 @@
 use std::process::exit;
 
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
 mod command;
 mod correction;
@@ -28,6 +29,7 @@ pub struct Opt {
 }
 
 #[derive(StructOpt, Debug)]
+#[structopt(setting = AppSettings::InferSubcommands)]
 pub enum Command {
     /// Analyze text (STDIN) using SVL
     Analyze(command::analyze::Opt),
@@ -37,8 +39,6 @@ pub enum Command {
     Export(command::export::Opt),
     /// Output HTML fragment
     Html(command::html::Opt),
-    /// Interactive shell
-    Interactive(command::lookup::ShellOpt),
     /// Lemmatize
     Lemmatize(command::lemmatize::Opt),
     /// Get word level (SVL)
@@ -49,6 +49,8 @@ pub enum Command {
     Path,
     /// HTTP Server
     Server(command::http::Opt),
+    /// Interactive shell
+    Shell(command::lookup::ShellOpt),
     /// Untypo
     Untypo(command::untypo::Opt),
 }
@@ -73,7 +75,7 @@ fn _main() -> AppResultU {
                 command::export::export(opt, &dictionary_path),
             Html(opt) =>
                 command::html::lookup(opt, &dictionary_path),
-            Interactive(opt) =>
+            Shell(opt) =>
                 command::lookup::shell(opt, &dictionary_path),
             Lemmatize(opt) =>
                 command::lemmatize::lemmatize(opt, &dictionary_path),
