@@ -236,6 +236,8 @@ fn analyze_usage(dictionary: &mut Dictionary, common: &Common, n: usize) -> AppR
     let mut words: Vec<(&str, usize)> = common.words.iter().map(|it| (it.word.as_ref(), it.count)).collect();
     words.sort_by(|(_, a), (_, b)| b.cmp(a));
     let mut results = 0;
+    let width = (n as f64).log(10.0) as usize + 1;
+    println!("width: {}", width);
     for (word, count) in words.iter() {
         if word.len() < 3 {
             continue;
@@ -244,8 +246,8 @@ fn analyze_usage(dictionary: &mut Dictionary, common: &Common, n: usize) -> AppR
             continue;
         }
 
-        println!("{}{:10} {:>7}", INDENT, word, count.separated_string());
         results += 1;
+        println!("{}{:width$}. {:10} {:>7}", INDENT, results, word, count.separated_string(), width = width);
         if n <= results {
             break;
         }
