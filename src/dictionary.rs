@@ -302,21 +302,25 @@ fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
 }
 
 fn lemmatize<'a>(tx: &Txn<'a>, main_bkt: &Bucket<'a, String, DicValue>, lemma_bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<String> {
-    let mut word = word.to_owned();
+    let mut unaliased = word.to_owned();
     let mut path = HashSet::<String>::new();
 
-    while let Some(found) = fix_alias(tx.get(&lemma_bkt, word.clone()))? {
+    while let Some(found) = fix_alias(tx.get(&lemma_bkt, unaliased.clone()))? {
         if !path.insert(found.clone()) {
-            return Ok(word)
+            return Ok(unaliased)
         }
-        word = found;
+        unaliased = found;
     }
 
-    let stemmed = stem(&word);
-    if fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some() {
+    let stemmed = stem(&unaliased);
+
+    let stemmped_in_dic = fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some();
+    let unaliased_in_dic = fix(tx.get(&main_bkt, unaliased.clone()))?.is_some();
+
+    if stemmped_in_dic || !unaliased_in_dic {
         Ok(stemmed.to_string())
     } else {
-        Ok(word.to_owned())
+        Ok(unaliased.to_owned())
     }
 }
 
