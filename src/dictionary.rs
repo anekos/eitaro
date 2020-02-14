@@ -314,10 +314,10 @@ fn lemmatize<'a>(tx: &Txn<'a>, main_bkt: &Bucket<'a, String, DicValue>, lemma_bk
 
     let stemmed = stem(&unaliased);
 
-    let stemmped_in_dic = fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some();
+    let stemmed_in_dic = fix(tx.get(&main_bkt, stemmed.to_string()))?.is_some();
     let unaliased_in_dic = fix(tx.get(&main_bkt, unaliased.clone()))?.is_some();
 
-    if stemmped_in_dic || !unaliased_in_dic {
+    if stemmed_in_dic || !unaliased_in_dic {
         Ok(stemmed.to_string())
     } else {
         Ok(unaliased.to_owned())
