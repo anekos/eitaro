@@ -41,7 +41,7 @@ pub struct Opt {
     pub usage: bool,
 }
 
-struct Common{
+struct Common {
     words: Vec<Word>,
 }
 
