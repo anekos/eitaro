@@ -237,7 +237,6 @@ fn analyze_usage(dictionary: &mut Dictionary, common: &Common, n: usize) -> AppR
     words.sort_by(|(_, a), (_, b)| b.cmp(a));
     let mut results = 0;
     let width = (n as f64).log(10.0) as usize + 1;
-    println!("width: {}", width);
     for (word, count) in words.iter() {
         if word.len() < 3 {
             continue;
