@@ -37,7 +37,7 @@ pub struct Opt {
     #[structopt(short, long)]
     pub svl: bool,
     /// Word usage ranking (without short or level 1 words)
-    #[structopt(short, long)]
+    #[structopt(short, long, name = "N")]
     pub usage: Option<usize>,
 }
 
