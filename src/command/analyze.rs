@@ -24,6 +24,9 @@ struct LevelIter(Level);
 
 #[derive(Debug, Default, Eq, PartialEq, StructOpt)]
 pub struct Opt {
+    /// All
+    #[structopt(short, long)]
+    pub all: bool,
     /// Count sentences and words
     #[structopt(short, long)]
     pub count: bool,
@@ -64,28 +67,22 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
     let common = analyze_common(&mut dic, &text)?;
 
     if opt == Opt::default() {
-        opt = Opt {
-            count: true,
-            not_in_dictionary: true,
-            out_of_level: true,
-            svl: true,
-            usage: Some(20),
-        };
+        opt = Opt { all: true, ..Default::default() };
     }
 
-    if opt.count {
+    if opt.count || opt.all {
         analyze_count(&common, &text)?;
     }
-    if opt.svl {
+    if opt.svl || opt.all {
         analyze_svl(&common)?;
     }
-    if let Some(n) = opt.usage {
+    if let Some(n) = opt.usage.or_else(|| if opt.all { Some(20) } else { None }) {
         analyze_usage(&mut dic, &common, n)?;
     }
-    if opt.out_of_level {
+    if opt.out_of_level || opt.all {
         analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
     }
-    if opt.not_in_dictionary {
+    if opt.not_in_dictionary || opt.all {
         analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary)?;
     }
 
