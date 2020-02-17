@@ -83,7 +83,7 @@ fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Opt
 fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option<usize>, correction: bool, pager: bool) -> AppResultU {
     let mut found = dic.get_smart(word.trim())?;
     if let Some(limit) = limit {
-        found = found.map(|it| it.into_iter().take(limit).collect());
+        found = found.map(|it| it.into_iter().take(limit + 1).collect());
     }
 
     if let Some(found) = found {
