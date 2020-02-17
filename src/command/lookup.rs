@@ -23,7 +23,7 @@ pub struct LookupOpt {
     /// No Color
     #[structopt(long="no-color", parse(from_flag = std::ops::Not::not))]
     color: bool,
-    /// Take only n entries
+    /// Take only n related entries
     #[structopt(short, long)]
     n: Option<usize>
 }
