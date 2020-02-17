@@ -20,7 +20,7 @@ const DEFAULT_PROMPT: &str = "Eitaro> ";
 pub struct LookupOpt {
     /// Word
     word: String,
-    /// Color
+    /// No Color
     #[structopt(long="no-color", parse(from_flag = std::ops::Not::not))]
     color: bool,
     /// Take only n entries
