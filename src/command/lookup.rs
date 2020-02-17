@@ -21,8 +21,8 @@ pub struct LookupOpt {
     /// Word
     word: String,
     /// Color
-    #[structopt(short, long)]
-    color: Option<bool>,
+    #[structopt(long="no-color", parse(from_flag = std::ops::Not::not))]
+    color: bool,
     /// Take only n entries
     #[structopt(short, long)]
     n: Option<usize>
@@ -39,7 +39,7 @@ pub struct ShellOpt {
 
 pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, &opt.word, opt.color.unwrap_or(true), opt.n, true)
+    lookup_and_print_lines(&mut dic, &opt.word, opt.color, opt.n, true)
 }
 
 pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
