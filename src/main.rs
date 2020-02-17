@@ -1,9 +1,13 @@
 
 use std::process::exit;
 
+#[macro_use]
+extern crate diesel;
+
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
+#[macro_use] mod db;
 mod command;
 mod correction;
 mod delay;
@@ -17,7 +21,6 @@ mod str_utils;
 mod types;
 
 use crate::errors::{AppError, AppResultU};
-
 
 
 

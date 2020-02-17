@@ -15,6 +15,7 @@ bincode = "*"
 closet = "*"
 csv = "*"
 deco = "*"
+diesel_migrations = "1.4.0"
 easycurses = "*"
 encoding = "*"
 failure = "*"
@@ -41,6 +42,10 @@ structopt = "0.3"
 termsize = "0.1"
 unicase = "1.0.*"
 unicode-jp = "*"
+
+[dependencies.diesel]
+version = "1.0.0"
+features = ["sqlite"]
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

@@ -7,9 +7,10 @@ use std::path::{Path, PathBuf};
 
 use array_tool::vec::Uniq;
 use bincode::serialize;
+use diesel::connection::Connection;
+use diesel::sqlite::SqliteConnection;
+use diesel_migrations::run_pending_migrations;
 use if_let_return::if_let_some;
-use kv::bincode::Bincode;
-use kv::{Bucket, Config, Error as KvError, Manager, Serde, Txn, ValueBuf};
 use lazy_init::Lazy;
 use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
@@ -20,19 +21,8 @@ use crate::str_utils::{fix_word, shorten, uncase};
 
 
 
-const ALIAS_BUCKET: &str = "alias";
-const LEMMA_BUCKET: &str = "lemma";
-const LEVEL_BUCKET: &str = "level";
-const MAIN_BUCKET: &str = "dictionary";
-
-type DicValue = ValueBuf<Bincode<Entry>>;
-type LevelValue = ValueBuf<Bincode<u8>>;
-
-
 pub struct Dictionary  {
-    config: Config,
     corrector: Lazy<AppResult<Corrector>>,
-    manager: Manager,
     path: PathBuf,
 } 
 
@@ -64,15 +54,11 @@ pub struct Entry {
 }
 
 pub struct DictionaryWriter<'a> {
-    alias_bucket: Bucket<'a, String, String>,
+    connection: &'a SqliteConnection,
     alias_buffer: CatBuffer<String>,
     keys: HashSet<String>,
-    lemma_bucket: Bucket<'a, String, String>,
-    level_bucket: Bucket<'a, String, LevelValue>,
     level_buffer: HashMap<u8, Vec<String>>,
-    main_bucket: Bucket<'a, String, DicValue>,
     main_buffer: CatBuffer<Definition>,
-    transaction: Txn<'a>,
     path: &'a dyn AsRef<Path>,
 }
 
@@ -89,17 +75,8 @@ struct CatBuffer<T> {
 
 impl Dictionary {
     pub fn new<T: AsRef<Path>>(dictionary_path: &T) -> Self {
-        let manager = Manager::new();
-        let mut config = Config::default(dictionary_path);
-        config.bucket(MAIN_BUCKET, None);
-        config.bucket(ALIAS_BUCKET, None);
-        config.bucket(LEMMA_BUCKET, None);
-        config.bucket(LEVEL_BUCKET, None);
-
         Dictionary {
-            config,
             corrector: Lazy::new(),
-            manager,
             path: dictionary_path.as_ref().to_path_buf()
         }
     }
@@ -117,22 +94,19 @@ impl Dictionary {
             Some(result)
         }
 
-        let handle = self.manager.open(self.config.clone())?;
-        let store = handle.read()?;
-        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
-        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
-        let transaction = store.read_txn()?;
-
         let mut result = vec![];
 
-        if let Some(entry) = fix(transaction.get(&main_bucket, word.to_owned()))? {
+        let connection = self.connect_db()?;
+
+        if let Some(entry) = lookup_entry(&connection, word)? {
             result.push(entry);
         }
 
-        if let Some(aliases) = fix_alias(transaction.get(&alias_bucket, word.to_owned()))? {
+        let connection = self.connect_db()?;
+        if let Some(aliases) = lookup_unaliased(&connection, word)? {
             for alias in aliases.split('\n') {
                 if alias != word {
-                    if let Some(entry) = fix(transaction.get(&main_bucket, alias.to_owned()))? {
+                    if let Some(entry) = lookup_entry(&connection, alias)? {
                         result.push(entry);
                     }
                 }
@@ -141,7 +115,7 @@ impl Dictionary {
 
         if result.is_empty() {
             for stemmed in stem(&word) {
-                if let Some(entry) = fix(transaction.get(&main_bucket, stemmed))? {
+                if let Some(entry) = lookup_entry(&connection, &stemmed)? {
                     result.push(entry);
                 }
             }
@@ -151,28 +125,26 @@ impl Dictionary {
    }
 
    pub fn get_level(&mut self, word: &str) -> AppResult<Option<u8>> {
-       fn get_level(tx: &Txn<'_>, bkt: &Bucket<'_, String, LevelValue>, word: &str) -> AppResult<Option<u8>> {
-           match tx.get(&bkt, word.to_owned()) {
-               Ok(found) => Ok(Some(found.inner()?.to_serde())),
-               Err(KvError::NotFound) => Ok(None),
-               Err(err) => Err(AppError::from(err)),
-           }
+       fn get_level(connection: &SqliteConnection, word: &str) -> AppResult<Option<u8>> {
+           diesel_query!(levels, Level, {
+               let found = levels
+                   .filter(term.eq(word))
+                   .limit(1)
+                   .load::<Level>(connection)?;
+
+               Ok(found.get(0).map(|it| it.level as u8))
+           })
        }
 
-       let handle = self.manager.open(self.config.clone())?;
-       let store = handle.read()?;
-       let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
-       let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
-       let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
-       let transaction = store.read_txn()?;
+       let connection = self.connect_db()?;
 
-       let found = get_level(&transaction, &level_bucket, word)?;
+       let found = get_level(&connection, word)?;
        if found.is_some() {
            return Ok(found)
        }
 
-       let lemmed = lemmatize(&transaction, &main_bucket, &lemma_bucket, word)?;
-       get_level(&transaction, &level_bucket, &lemmed)
+       let lemmed = lemmatize(&connection, word)?;
+       get_level(&connection, &lemmed)
    }
 
    pub fn get_smart(&mut self, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
@@ -206,12 +178,8 @@ impl Dictionary {
     }
 
     pub fn lemmatize(&mut self, word: &str) -> AppResult<String> {
-        let handle = self.manager.open(self.config.clone())?;
-        let store = handle.read()?;
-        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
-        let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
-        let transaction = store.read_txn()?;
-        lemmatize(&transaction, &main_bucket, &lemma_bucket, word)
+        let connection = self.connect_db()?;
+        lemmatize(&connection, word)
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
@@ -234,24 +202,21 @@ impl Dictionary {
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
-        let handle = self.manager.open(self.config.clone())?;
-        let store = handle.write()?;
-        let main_bucket = store.bucket::<String, DicValue>(Some(MAIN_BUCKET))?;
-        let alias_bucket = store.bucket::<String, String>(Some(ALIAS_BUCKET))?;
-        let level_bucket = store.bucket::<String, LevelValue>(Some(LEVEL_BUCKET))?;
-        let lemma_bucket = store.bucket::<String, String>(Some(LEMMA_BUCKET))?;
+        let connection = self.connect_db()?;
+        run_pending_migrations(&connection)?;
 
-        let mut transaction = store.write_txn()?;
-        transaction.clear_db(&alias_bucket)?;
-        transaction.clear_db(&lemma_bucket)?;
-        transaction.clear_db(&level_bucket)?;
-        transaction.clear_db(&main_bucket)?;
-        transaction.commit()?;
+        connection.transaction::<_, AppError, _>(|| {
+            let mut writer = DictionaryWriter::new(&connection, &self.path);
+            f(&mut writer).unwrap();
+            writer.complete()
+        })
+    }
 
-        let transaction = store.write_txn()?;
-        let mut writer = DictionaryWriter::new(transaction, main_bucket, alias_bucket, lemma_bucket, level_bucket, &self.path);
-        f(&mut writer)?;
-        writer.complete()
+    fn connect_db(&self) -> AppResult<SqliteConnection> {
+        let mut path = self.path.clone();
+         path.push("db.sqlite");
+        let path = path.to_str().ok_or(AppError::Unexpect("WTF: connection"))?;
+        Ok(SqliteConnection::establish(path)?)
     }
 
     fn get_similars(&mut self, word: &str) -> AppResult<Option<Vec<Entry>>> {
@@ -285,44 +250,72 @@ impl Dictionary {
 }
 
 
-fn fix(result: Result<DicValue, KvError>) -> AppResult<Option<Entry>> {
-    match result {
-        Ok(found) => Ok(Some(found.inner()?.to_serde())),
-        Err(KvError::NotFound) => Ok(None),
-        Err(err) => Err(AppError::from(err)),
-    }
-}
-
-fn fix_alias(result: Result<String, KvError>) -> AppResult<Option<String>> {
-    match result {
-        Ok(found) => Ok(Some(found)),
-        Err(KvError::NotFound) => Ok(None),
-        Err(err) => Err(AppError::from(err)),
-    }
-}
-
-fn lemmatize<'a>(tx: &Txn<'a>, main_bkt: &Bucket<'a, String, DicValue>, lemma_bkt: &Bucket<'a, String, String>, word: &str) -> AppResult<String> {
+fn lemmatize(connection: &SqliteConnection, word: &str) -> AppResult<String> {
     let mut lemmed = word.to_owned();
     let mut path = HashSet::<String>::new();
 
-    while let Some(found) = fix_alias(tx.get(&lemma_bkt, lemmed.clone()))? {
+    while let Some(found) = lookup_lemmatized(connection, &lemmed)? {
         if !path.insert(found.clone()) {
             return Ok(lemmed)
         }
         lemmed = found;
     }
 
-    if fix(tx.get(&main_bkt, lemmed.clone()))?.is_some() {
+    if lookup_entry(connection, &lemmed)?.is_some() {
         return Ok(lemmed.to_owned());
     }
 
     for stemmed in stem(&lemmed) {
-        if fix(tx.get(&main_bkt, stemmed.clone()))?.is_some() {
+        if lookup_entry(connection, &stemmed)?.is_some() {
             return Ok(stemmed);
         }
     }
 
     Ok(lemmed.to_owned())
+}
+
+fn lookup_entry(connection: &SqliteConnection, word: &str) -> AppResult<Option<Entry>> {
+    diesel_query!(definitions, Definition, {
+        let found = definitions
+            .filter(term.eq(word))
+            .limit(1)
+            .load::<Definition>(connection)?;
+
+        if found.is_empty() {
+            return Ok(None)
+        }
+
+        if 1 < found.len() {
+            return Err(AppError::Unexpect("Too many definitions"));
+        }
+
+        Ok(Some(Entry {
+            key: word.to_owned(),
+            definitions: serde_json::from_str(&found[0].definition)?,
+        }))
+    })
+}
+
+fn lookup_lemmatized(connection: &SqliteConnection, word: &str) -> AppResult<Option<String>> {
+    diesel_query!(lemmatizations, Lemmatization, {
+        let found = lemmatizations
+            .filter(source.eq(word))
+            .limit(1)
+            .load::<Lemmatization>(connection)?;
+
+        Ok(found.get(0).map(|it| it.target.to_owned()))
+    })
+}
+
+fn lookup_unaliased(connection: &SqliteConnection, word: &str) -> AppResult<Option<String>> {
+    diesel_query!(aliases, Alias, {
+        let found = aliases
+            .filter(source.eq(word))
+            .limit(1)
+            .load::<Alias>(connection)?;
+
+        Ok(found.get(0).map(|it| it.target.to_owned()))
+    })
 }
 
 fn stem(word: &str) -> Vec<String> {
@@ -362,17 +355,13 @@ fn stem(word: &str) -> Vec<String> {
 
 
 impl<'a> DictionaryWriter<'a> {
-    fn new<T: AsRef<Path>>(transaction: Txn<'a>, main_bucket: Bucket<'a, String, DicValue>, alias_bucket: Bucket<'a, String, String>, lemma_bucket: Bucket<'a, String, String>, level_bucket: Bucket<'a, String, LevelValue>, path: &'a T) -> Self {
+    fn new<T: AsRef<Path>>(connection: &'a SqliteConnection, path: &'a T) -> Self {
         DictionaryWriter {
-            alias_bucket,
             alias_buffer: CatBuffer::default(),
+            connection,
             keys: HashSet::default(),
-            lemma_bucket,
-            level_bucket,
             level_buffer: HashMap::default(),
-            main_bucket,
             main_buffer: CatBuffer::default(),
-            transaction,
             path,
         }
     }
@@ -393,33 +382,32 @@ impl<'a> DictionaryWriter<'a> {
             }
 
             if for_lemmatization {
-                self.transaction.set(&self.lemma_bucket, from.clone(), to.clone())?;
+                diesel_query!(lemmatizations, {
+                    diesel::insert_into(lemmatizations).values((source.eq(&from), target.eq(&to))).execute(self.connection).unwrap(); // FIXME
+                })
             }
+
             self.alias_buffer.insert(from, to);
         }
         Ok(())
     }
 
     pub fn levelize(&mut self, level: u8, key: &str) -> AppResultU {
-        self.transaction.set(&self.level_bucket, key.to_owned(), Bincode::to_value_buf(level)?)?;
         let lb = self.level_buffer.entry(level).or_default();
         lb.push(key.to_owned());
         Ok(())
     }
 
-    fn complete(mut self) -> AppResult<Stat> {
-        let words = self.main_buffer.complete(&mut self.transaction, &self.main_bucket)?;
-        let aliases = self.alias_buffer.complete(&mut self.transaction, &self.alias_bucket)?;
-        self.transaction.commit()?;
+    fn complete(self) -> AppResult<Stat> {
+        let words = self.main_buffer.complete(self.connection)?;
+        let aliases = self.alias_buffer.complete(self.connection)?;
 
-        for (level, words) in self.level_buffer {
-            let mut path = self.path.as_ref().to_path_buf();
-            path.push(format!("level-{}", level));
-            let file = OpenOptions::new().write(true).append(false).create(true).open(path)?;
-            let mut file = BufWriter::new(file);
-            for word in words {
-                writeln!(file, "{}", word)?;
-            }
+        for (lv, words) in self.level_buffer {
+            diesel_query!(levels, {
+                for word in words {
+                    diesel::insert_into(levels).values((term.eq(&word), level.eq(i32::from(lv)))).execute(self.connection).unwrap(); // FIXME
+                }
+            })
         }
 
         {
@@ -444,22 +432,35 @@ impl<T> CatBuffer<T> {
 }
 
 impl CatBuffer<Definition> {
-    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, DicValue>) -> AppResult<usize> {
+    fn complete(self, connection: &SqliteConnection) -> AppResult<usize> {
         let len = self.buffer.len();
-        for (key, definitions) in self.buffer {
-            transaction.set(bucket, key.clone(), Bincode::to_value_buf(Entry { key,  definitions })?)?;
-        }
+
+        diesel_query!(definitions, {
+            for (key, values) in &self.buffer {
+                let serialized = serde_json::to_string(&values).unwrap();
+                diesel::insert_into(definitions)
+                    .values((term.eq(key), definition.eq(serialized)))
+                    .execute(connection)?;
+            }
+        });
+
         Ok(len)
     }
 }
 
 impl CatBuffer<String> {
-    fn complete<'a>(self, transaction: &mut Txn<'a>, bucket: &Bucket<'a, String, String>) -> AppResult<usize> {
-        let len = self.buffer.len();
-        for (key, values) in self.buffer {
-            transaction.set(bucket, key, values.join("\n"))?;
-        }
-        Ok(len)
+    fn complete(self, connection: &SqliteConnection) -> AppResult<usize> {
+        diesel_query!(aliases, {
+            let len = self.buffer.len();
+
+            for (k, vs) in &self.buffer {
+                for v in vs {
+                    diesel::insert_into(aliases).values((source.eq(k), target.eq(v))).execute(connection)?;
+                }
+            }
+
+            Ok(len)
+        })
     }
 }
 
