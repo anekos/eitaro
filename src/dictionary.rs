@@ -206,8 +206,16 @@ impl Dictionary {
         run_pending_migrations(&connection)?;
 
         connection.transaction::<_, AppError, _>(|| {
+            use crate::db::schema;
+            use diesel::RunQueryDsl;
+
+            diesel::delete(schema::aliases::dsl::aliases).execute(&connection)?;
+            diesel::delete(schema::definitions::dsl::definitions).execute(&connection)?;
+            diesel::delete(schema::lemmatizations::dsl::lemmatizations).execute(&connection)?;
+            diesel::delete(schema::levels::dsl::levels).execute(&connection)?;
+
             let mut writer = DictionaryWriter::new(&connection, &self.path);
-            f(&mut writer).unwrap();
+            f(&mut writer)?;
             writer.complete()
         })
     }
