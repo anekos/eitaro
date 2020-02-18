@@ -388,12 +388,19 @@ impl<'a> DictionaryWriter<'a> {
 
             if for_lemmatization {
                 diesel_query!(lemmatizations, {
-                    diesel::insert_into(lemmatizations).values((source.eq(&from), target.eq(&to))).execute(self.connection).unwrap(); // FIXME
+                    diesel::insert_into(lemmatizations).values((d::source.eq(&from), d::target.eq(&to))).execute(self.connection)?;
                 })
             }
 
             self.alias_buffer.insert(from, to);
         }
+        Ok(())
+    }
+
+    pub fn tag(&mut self, term: &str, tag: &str) -> AppResultU {
+        diesel_query!(tags, {
+            diesel::insert_into(tags).values((d::term.eq(&term), d::tag.eq(&tag))).execute(self.connection)?;
+        });
         Ok(())
     }
 
@@ -410,7 +417,7 @@ impl<'a> DictionaryWriter<'a> {
         for (lv, words) in self.level_buffer {
             diesel_query!(levels, {
                 for word in words {
-                    diesel::insert_into(levels).values((term.eq(&word), level.eq(i32::from(lv)))).execute(self.connection).unwrap(); // FIXME
+                    diesel::insert_into(levels).values((d::term.eq(&word), d::level.eq(i32::from(lv)))).execute(self.connection)?;
                 }
             })
         }
@@ -435,7 +442,7 @@ impl CatBuffer<Definition> {
             for (key, values) in &self.buffer {
                 let serialized = serde_json::to_string(&values).unwrap();
                 diesel::insert_into(definitions)
-                    .values((term.eq(key), definition.eq(serialized)))
+                    .values((d::term.eq(key), d::definition.eq(serialized)))
                     .execute(connection)?;
             }
         });
@@ -451,7 +458,7 @@ impl CatBuffer<String> {
 
             for (k, vs) in &self.buffer {
                 for v in vs {
-                    diesel::insert_into(aliases).values((source.eq(k), target.eq(v))).execute(connection)?;
+                    diesel::insert_into(aliases).values((d::source.eq(k), d::target.eq(v))).execute(connection)?;
                 }
             }
 

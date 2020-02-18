@@ -7,7 +7,8 @@ pub mod schema;
 macro_rules! diesel_query {
     ($a:ident, $body:expr) => {
         {
-            use crate::db::schema::$a::dsl::*;
+            use crate::db::schema::$a::dsl::$a;
+            use crate::db::schema::$a::{dsl as d};
             use diesel::ExpressionMethods;
             use diesel::RunQueryDsl;
             $body
