@@ -1,12 +1,9 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::default::Default;
-use std::fs::OpenOptions;
-use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use array_tool::vec::Uniq;
-use bincode::serialize;
 use diesel::connection::Connection;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::run_pending_migrations;
@@ -59,7 +56,6 @@ pub struct DictionaryWriter<'a> {
     keys: HashSet<String>,
     level_buffer: HashMap<u8, Vec<String>>,
     main_buffer: CatBuffer<Definition>,
-    path: &'a dyn AsRef<Path>,
 }
 
 pub struct Stat {
@@ -183,11 +179,15 @@ impl Dictionary {
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
-        let mut path = self.path.clone();
-        path.push("keys");
-
         let corrector = self.corrector.get_or_create(|| {
-            Corrector::load(&path)
+            use crate::db::schema::definitions::dsl::definitions;
+            use crate::db::model::Definition;
+            use diesel::RunQueryDsl;
+
+            let connection = self.connect_db()?;
+            let defs = definitions.load::<Definition>(&connection)?;
+            let keys = defs.into_iter().map(|it| it.term).collect();
+            Ok(Corrector { keys })
         });
 
         match corrector {
@@ -214,7 +214,7 @@ impl Dictionary {
             diesel::delete(schema::lemmatizations::dsl::lemmatizations).execute(&connection)?;
             diesel::delete(schema::levels::dsl::levels).execute(&connection)?;
 
-            let mut writer = DictionaryWriter::new(&connection, &self.path);
+            let mut writer = DictionaryWriter::new(&connection);
             f(&mut writer)?;
             writer.complete()
         })
@@ -363,14 +363,13 @@ fn stem(word: &str) -> Vec<String> {
 
 
 impl<'a> DictionaryWriter<'a> {
-    fn new<T: AsRef<Path>>(connection: &'a SqliteConnection, path: &'a T) -> Self {
+    fn new(connection: &'a SqliteConnection) -> Self {
         DictionaryWriter {
             alias_buffer: CatBuffer::default(),
             connection,
             keys: HashSet::default(),
             level_buffer: HashMap::default(),
             main_buffer: CatBuffer::default(),
-            path,
         }
     }
 
@@ -416,15 +415,6 @@ impl<'a> DictionaryWriter<'a> {
                     diesel::insert_into(levels).values((term.eq(&word), level.eq(i32::from(lv)))).execute(self.connection).unwrap(); // FIXME
                 }
             })
-        }
-
-        {
-            let mut path = self.path.as_ref().to_path_buf();
-            path.push("keys");
-            let file = OpenOptions::new().write(true).append(false).create(true).truncate(true).open(path)?;
-            let mut file = BufWriter::new(file);
-            let buffer: Vec<u8> = serialize(&self.keys)?;
-            file.write_all(&buffer)?;
         }
 
         Ok(Stat { aliases, words })
