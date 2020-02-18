@@ -9,7 +9,9 @@ const APP_INFO: AppInfo = AppInfo { name: "eitaro", author: "anekos" };
 
 
 pub fn get_dictionary_path() -> Result<PathBuf, AppDirsError> {
-    app_dir(AppDataType::UserCache, &APP_INFO, "dictionary")
+    let mut result = app_dir(AppDataType::UserCache, &APP_INFO, "dictionary")?;
+    result.push("db.sqlite");
+    Ok(result)
 }
 
 pub fn get_history_path() -> Result<PathBuf, AppDirsError> {

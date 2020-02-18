@@ -221,9 +221,7 @@ impl Dictionary {
     }
 
     fn connect_db(&self) -> AppResult<SqliteConnection> {
-        let mut path = self.path.clone();
-         path.push("db.sqlite");
-        let path = path.to_str().ok_or(AppError::Unexpect("WTF: connection"))?;
+        let path = self.path.to_str().ok_or(AppError::Unexpect("WTF: connection"))?;
         Ok(SqliteConnection::establish(path)?)
     }
 
