@@ -23,8 +23,7 @@ table! {
 }
 
 table! {
-    levels (id) {
-        id -> Integer,
+    levels (term) {
         term -> Text,
         level -> Integer,
     }

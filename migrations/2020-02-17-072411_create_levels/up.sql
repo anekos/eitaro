@@ -1,7 +1,6 @@
 -- Your SQL goes here
 CREATE TABLE levels (
-  id INTEGER PRIMARY KEY NOT NULL,
-  term TEXT NOT NULL,
+  term TEXT NOT NULL PRIMARY KEY,
   level INTEGER NOT NULL
 );
-CREATE INDEX levels_term_index ON levels(term);
+CREATE INDEX levels_level_index ON levels(level);

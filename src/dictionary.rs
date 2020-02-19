@@ -1,5 +1,5 @@
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::default::Default;
 use std::path::{Path, PathBuf};
 
@@ -54,7 +54,6 @@ pub struct DictionaryWriter<'a> {
     connection: &'a SqliteConnection,
     alias_buffer: CatBuffer<String>,
     keys: HashSet<String>,
-    level_buffer: HashMap<u8, Vec<String>>,
     main_buffer: CatBuffer<Definition>,
 }
 
@@ -366,7 +365,6 @@ impl<'a> DictionaryWriter<'a> {
             alias_buffer: CatBuffer::default(),
             connection,
             keys: HashSet::default(),
-            level_buffer: HashMap::default(),
             main_buffer: CatBuffer::default(),
         }
     }
@@ -405,23 +403,15 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     pub fn levelize(&mut self, level: u8, key: &str) -> AppResultU {
-        let lb = self.level_buffer.entry(level).or_default();
-        lb.push(key.to_owned());
+        diesel_query!(levels, {
+            diesel::replace_into(levels).values((d::term.eq(&key), d::level.eq(i32::from(level)))).execute(self.connection)?;
+        });
         Ok(())
     }
 
     fn complete(self) -> AppResult<Stat> {
         let words = self.main_buffer.complete(self.connection)?;
         let aliases = self.alias_buffer.complete(self.connection)?;
-
-        for (lv, words) in self.level_buffer {
-            diesel_query!(levels, {
-                for word in words {
-                    diesel::insert_into(levels).values((d::term.eq(&word), d::level.eq(i32::from(lv)))).execute(self.connection)?;
-                }
-            })
-        }
-
         Ok(Stat { aliases, words })
     }
 }

@@ -14,7 +14,6 @@ pub struct Definition {
 
 #[derive(Queryable)]
 pub struct Level {
-    pub id: i32,
     pub term: String,
     pub level: i32,
 }
