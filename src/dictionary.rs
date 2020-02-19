@@ -1,5 +1,5 @@
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::default::Default;
 use std::path::{Path, PathBuf};
 
@@ -52,7 +52,6 @@ pub struct Entry {
 
 pub struct DictionaryWriter<'a> {
     connection: &'a SqliteConnection,
-    alias_buffer: CatBuffer<String>,
     keys: HashSet<String>,
 }
 
@@ -61,10 +60,6 @@ pub struct Stat {
     pub words: usize,
 }
 
-#[derive(Default)]
-struct CatBuffer<T> {
-    buffer: BTreeMap<String, Vec<T>>,
-}
 
 
 impl Dictionary {
@@ -358,7 +353,6 @@ fn stem(word: &str) -> Vec<String> {
 impl<'a> DictionaryWriter<'a> {
     fn new(connection: &'a SqliteConnection) -> Self {
         DictionaryWriter {
-            alias_buffer: CatBuffer::default(),
             connection,
             keys: HashSet::default(),
         }
@@ -373,10 +367,12 @@ impl<'a> DictionaryWriter<'a> {
             if for_lemmatization {
                 diesel_query!(lemmatizations, {
                     diesel::insert_into(lemmatizations).values((d::source.eq(&from), d::target.eq(&to))).execute(self.connection)?;
-                })
+                });
             }
 
-            self.alias_buffer.insert(from, to);
+            diesel_query!(aliases, {
+                diesel::insert_into(aliases).values((d::source.eq(&from), d::target.eq(&to))).execute(self.connection)?;
+            });
         }
         Ok(())
     }
@@ -420,34 +416,11 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     fn complete(self) -> AppResult<Stat> {
-        let aliases = self.alias_buffer.complete(self.connection)?;
-        Ok(Stat { aliases, words: 0 }) // FIXME
+        Ok(Stat { aliases: 0, words: 0 }) // FIXME
     }
 }
 
 
-impl<T> CatBuffer<T> {
-    fn insert(&mut self, key: String, value: T) {
-        let entries = self.buffer.entry(key).or_insert_with(|| vec![]);
-        entries.push(value);
-    }
-}
-
-impl CatBuffer<String> {
-    fn complete(self, connection: &SqliteConnection) -> AppResult<usize> {
-        diesel_query!(aliases, {
-            let len = self.buffer.len();
-
-            for (k, vs) in &self.buffer {
-                for v in vs {
-                    diesel::insert_into(aliases).values((d::source.eq(k), d::target.eq(v))).execute(connection)?;
-                }
-            }
-
-            Ok(len)
-        })
-    }
-}
 
 // TODO REMOVE ME
 impl Default for Definition {
