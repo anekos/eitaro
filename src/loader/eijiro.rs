@@ -104,7 +104,7 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
             }
         }
 
-        writer.insert(key, parsed)
+        writer.define(key, parsed)
     }
 
     if_let_some!(sep = line.find(" : "), Ok(()));

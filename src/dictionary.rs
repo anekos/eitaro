@@ -54,7 +54,6 @@ pub struct DictionaryWriter<'a> {
     connection: &'a SqliteConnection,
     alias_buffer: CatBuffer<String>,
     keys: HashSet<String>,
-    main_buffer: CatBuffer<Definition>,
 }
 
 pub struct Stat {
@@ -280,25 +279,22 @@ fn lemmatize(connection: &SqliteConnection, word: &str) -> AppResult<String> {
 }
 
 fn lookup_entry(connection: &SqliteConnection, word: &str) -> AppResult<Option<Entry>> {
-    diesel_query!(definitions, Definition, {
-        let found = definitions
+    let found = diesel_query!(definitions, Definition, {
+        definitions
             .filter(term.eq(word))
-            .limit(1)
-            .load::<Definition>(connection)?;
+            .load::<Definition>(connection)?
+    });
 
-        if found.is_empty() {
-            return Ok(None)
-        }
+    if found.is_empty() {
+        return Ok(None)
+    }
 
-        if 1 < found.len() {
-            return Err(AppError::Unexpect("Too many definitions"));
-        }
+    let defs: serde_json::Result<Vec<Definition>> = found.iter().map(|it| serde_json::from_str::<Definition>(&it.definition)).collect();
 
-        Ok(Some(Entry {
-            key: word.to_owned(),
-            definitions: serde_json::from_str(&found[0].definition)?,
-        }))
-    })
+    Ok(Some(Entry {
+        key: word.to_owned(),
+        definitions: defs?,
+    }))
 }
 
 fn lookup_lemmatized(connection: &SqliteConnection, word: &str) -> AppResult<Option<String>> {
@@ -365,17 +361,7 @@ impl<'a> DictionaryWriter<'a> {
             alias_buffer: CatBuffer::default(),
             connection,
             keys: HashSet::default(),
-            main_buffer: CatBuffer::default(),
         }
-    }
-
-    pub fn insert(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
-        let lkey = key.to_lowercase();
-        if !(key.contains(' ') || key.contains('-') || key.contains('\'')) {
-            self.keys.insert(lkey.clone());
-        }
-        self.main_buffer.insert(lkey, Definition { key: key.to_owned(), content });
-        Ok(())
     }
 
     pub fn alias(&mut self, from: &str, to: &str, for_lemmatization: bool) -> AppResultU {
@@ -395,6 +381,23 @@ impl<'a> DictionaryWriter<'a> {
         Ok(())
     }
 
+    pub fn define(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
+        let lkey = key.to_lowercase();
+
+        self.add_key(&lkey)?;
+
+        let def = Definition { key: key.to_owned(), content };
+
+        diesel_query!(definitions, {
+            let serialized = serde_json::to_string(&def).unwrap();
+            diesel::insert_into(definitions)
+                .values((d::term.eq(lkey), d::definition.eq(serialized)))
+                .execute(self.connection)?;
+        });
+
+        Ok(())
+    }
+
     pub fn tag(&mut self, term: &str, tag: &str) -> AppResultU {
         diesel_query!(tags, {
             diesel::insert_into(tags).values((d::term.eq(&term), d::tag.eq(&tag))).execute(self.connection)?;
@@ -409,10 +412,16 @@ impl<'a> DictionaryWriter<'a> {
         Ok(())
     }
 
+    fn add_key(&mut self, key: &str) -> AppResultU {
+        if !(key.contains(' ') || key.contains('-') || key.contains('\'')) {
+            self.keys.insert(key.to_string());
+        }
+        Ok(())
+    }
+
     fn complete(self) -> AppResult<Stat> {
-        let words = self.main_buffer.complete(self.connection)?;
         let aliases = self.alias_buffer.complete(self.connection)?;
-        Ok(Stat { aliases, words })
+        Ok(Stat { aliases, words: 0 }) // FIXME
     }
 }
 
@@ -421,23 +430,6 @@ impl<T> CatBuffer<T> {
     fn insert(&mut self, key: String, value: T) {
         let entries = self.buffer.entry(key).or_insert_with(|| vec![]);
         entries.push(value);
-    }
-}
-
-impl CatBuffer<Definition> {
-    fn complete(self, connection: &SqliteConnection) -> AppResult<usize> {
-        let len = self.buffer.len();
-
-        diesel_query!(definitions, {
-            for (key, values) in &self.buffer {
-                let serialized = serde_json::to_string(&values).unwrap();
-                diesel::insert_into(definitions)
-                    .values((d::term.eq(key), d::definition.eq(serialized)))
-                    .execute(connection)?;
-            }
-        });
-
-        Ok(len)
     }
 }
 
