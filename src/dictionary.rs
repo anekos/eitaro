@@ -52,7 +52,6 @@ pub struct Entry {
 
 pub struct DictionaryWriter<'a> {
     connection: &'a SqliteConnection,
-    keys: HashSet<String>,
 }
 
 pub struct Stat {
@@ -115,13 +114,14 @@ impl Dictionary {
 
    pub fn get_level(&mut self, word: &str) -> AppResult<Option<u8>> {
        fn get_level(connection: &SqliteConnection, word: &str) -> AppResult<Option<u8>> {
-           diesel_query!(levels, Level, {
-               let found = levels
-                   .filter(term.eq(word))
-                   .limit(1)
-                   .load::<Level>(connection)?;
+           diesel_query!(levels [Q E R O] {
+               let found = d::levels
+                   .filter(d::term.eq(word))
+                   .select(d::level)
+                   .first::<i32>(connection)
+                   .optional()?;
 
-               Ok(found.get(0).map(|it| it.level as u8))
+               Ok(found.map(|it| it as u8))
            })
        }
 
@@ -173,14 +173,13 @@ impl Dictionary {
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
         let corrector = self.corrector.get_or_create(|| {
-            use crate::db::schema::definitions::dsl::definitions;
-            use crate::db::model::Definition;
-            use diesel::RunQueryDsl;
-
             let connection = self.connect_db()?;
-            let defs = definitions.load::<Definition>(&connection)?;
-            let keys = defs.into_iter().map(|it| it.term).collect();
-            Ok(Corrector { keys })
+            let keys = diesel_query!(definitions [Q R] {
+                d::definitions
+                    .select(d::term)
+                    .load::<String>(&connection)?
+            });
+            Ok(Corrector { keys: keys.into_iter().collect() })
         });
 
         match corrector {
@@ -209,7 +208,7 @@ impl Dictionary {
 
             let mut writer = DictionaryWriter::new(&connection);
             f(&mut writer)?;
-            writer.complete()
+            stat(&connection)
         })
     }
 
@@ -274,9 +273,9 @@ fn lemmatize(connection: &SqliteConnection, word: &str) -> AppResult<String> {
 }
 
 fn lookup_entry(connection: &SqliteConnection, word: &str) -> AppResult<Option<Entry>> {
-    let found = diesel_query!(definitions, Definition, {
-        definitions
-            .filter(term.eq(word))
+    let found = diesel_query!(definitions, Definition [Q E R] {
+        d::definitions
+            .filter(d::term.eq(word))
             .load::<Definition>(connection)?
     });
 
@@ -293,9 +292,9 @@ fn lookup_entry(connection: &SqliteConnection, word: &str) -> AppResult<Option<E
 }
 
 fn lookup_lemmatized(connection: &SqliteConnection, word: &str) -> AppResult<Option<String>> {
-    diesel_query!(lemmatizations, Lemmatization, {
-        let found = lemmatizations
-            .filter(source.eq(word))
+    diesel_query!(lemmatizations, Lemmatization [Q E R] {
+        let found = d::lemmatizations
+            .filter(d::source.eq(word))
             .limit(1)
             .load::<Lemmatization>(connection)?;
 
@@ -304,14 +303,32 @@ fn lookup_lemmatized(connection: &SqliteConnection, word: &str) -> AppResult<Opt
 }
 
 fn lookup_unaliased(connection: &SqliteConnection, word: &str) -> AppResult<Option<String>> {
-    diesel_query!(aliases, Alias, {
-        let found = aliases
-            .filter(source.eq(word))
+    diesel_query!(aliases, Alias [Q E R] {
+        let found = d::aliases
+            .filter(d::source.eq(word))
             .limit(1)
             .load::<Alias>(connection)?;
 
         Ok(found.get(0).map(|it| it.target.to_owned()))
     })
+}
+
+fn stat(connection: &SqliteConnection) -> AppResult<Stat> {
+    // FIXME
+    let words = diesel_query!(definitions [Q R] {
+        d::definitions
+            .select(d::term)
+            .distinct()
+            .load::<String>(connection)
+    })?.len();
+    let aliases = diesel_query!(aliases [Q R] {
+        use diesel::dsl::count;
+        d::aliases
+            .select(count(d::id))
+            .first::<i64>(connection)
+    })? as usize;
+
+    Ok(Stat { aliases, words })
 }
 
 fn stem(word: &str) -> Vec<String> {
@@ -354,7 +371,6 @@ impl<'a> DictionaryWriter<'a> {
     fn new(connection: &'a SqliteConnection) -> Self {
         DictionaryWriter {
             connection,
-            keys: HashSet::default(),
         }
     }
 
@@ -365,13 +381,17 @@ impl<'a> DictionaryWriter<'a> {
             }
 
             if for_lemmatization {
-                diesel_query!(lemmatizations, {
-                    diesel::insert_into(lemmatizations).values((d::source.eq(&from), d::target.eq(&to))).execute(self.connection)?;
+                diesel_query!(lemmatizations [E R] {
+                    diesel::insert_into(d::lemmatizations)
+                        .values((d::source.eq(&from), d::target.eq(&to)))
+                        .execute(self.connection)?;
                 });
             }
 
-            diesel_query!(aliases, {
-                diesel::insert_into(aliases).values((d::source.eq(&from), d::target.eq(&to))).execute(self.connection)?;
+            diesel_query!(aliases [E R] {
+                diesel::insert_into(d::aliases)
+                    .values((d::source.eq(&from), d::target.eq(&to)))
+                    .execute(self.connection)?;
             });
         }
         Ok(())
@@ -380,13 +400,11 @@ impl<'a> DictionaryWriter<'a> {
     pub fn define(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
         let lkey = key.to_lowercase();
 
-        self.add_key(&lkey)?;
-
         let def = Definition { key: key.to_owned(), content };
 
-        diesel_query!(definitions, {
+        diesel_query!(definitions [E R] {
             let serialized = serde_json::to_string(&def).unwrap();
-            diesel::insert_into(definitions)
+            diesel::insert_into(d::definitions)
                 .values((d::term.eq(lkey), d::definition.eq(serialized)))
                 .execute(self.connection)?;
         });
@@ -395,28 +413,21 @@ impl<'a> DictionaryWriter<'a> {
     }
 
     pub fn tag(&mut self, term: &str, tag: &str) -> AppResultU {
-        diesel_query!(tags, {
-            diesel::insert_into(tags).values((d::term.eq(&term), d::tag.eq(&tag))).execute(self.connection)?;
+        diesel_query!(tags [E R] {
+            diesel::insert_into(d::tags)
+                .values((d::term.eq(&term), d::tag.eq(&tag)))
+                .execute(self.connection)?;
         });
         Ok(())
     }
 
     pub fn levelize(&mut self, level: u8, key: &str) -> AppResultU {
-        diesel_query!(levels, {
-            diesel::replace_into(levels).values((d::term.eq(&key), d::level.eq(i32::from(level)))).execute(self.connection)?;
+        diesel_query!(levels [E R] {
+            diesel::replace_into(d::levels)
+                .values((d::term.eq(&key), d::level.eq(i32::from(level))))
+                .execute(self.connection)?;
         });
         Ok(())
-    }
-
-    fn add_key(&mut self, key: &str) -> AppResultU {
-        if !(key.contains(' ') || key.contains('-') || key.contains('\'')) {
-            self.keys.insert(key.to_string());
-        }
-        Ok(())
-    }
-
-    fn complete(self) -> AppResult<Stat> {
-        Ok(Stat { aliases: 0, words: 0 }) // FIXME
     }
 }
 

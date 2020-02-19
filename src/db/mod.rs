@@ -5,24 +5,50 @@ pub mod schema;
 
 
 macro_rules! diesel_query {
-    ($a:ident, $body:expr) => {
+    ([] $body:expr) => {
+        $body
+    };
+
+    ([E $($use:ident)*] $body:expr) => {
         {
-            use crate::db::schema::$a::dsl::$a;
-            use crate::db::schema::$a::{dsl as d};
             use diesel::ExpressionMethods;
-            use diesel::RunQueryDsl;
-            $body
+            diesel_query!([$($use)*] $body)
         }
     };
 
-    ($a:ident, $b:ident, $body:expr) => {
+    ([O $($use:ident)*] $body:expr) => {
         {
-            use crate::db::schema::$a::dsl::*;
-            use crate::db::model::$b;
-            use diesel::ExpressionMethods;
+            use diesel::OptionalExtension;
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
+    ([Q $($use:ident)*] $body:expr) => {
+        {
             use diesel::QueryDsl;
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
+    ([R $($use:ident)*] $body:expr) => {
+        {
             use diesel::RunQueryDsl;
-            $body
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
+    ($a:ident [$($use:ident)*] $body:expr) => {
+        {
+            use crate::db::schema::$a::{dsl as d};
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
+    ($a:ident, $b:ident [$($use:ident)*] $body:expr) => {
+        {
+            use crate::db::schema::$a::{dsl as d};
+            use crate::db::model::$b;
+            diesel_query!([$($use)*] $body)
         }
     }
 }

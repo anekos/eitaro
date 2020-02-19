@@ -13,12 +13,6 @@ pub struct Definition {
 }
 
 #[derive(Queryable)]
-pub struct Level {
-    pub term: String,
-    pub level: i32,
-}
-
-#[derive(Queryable)]
 pub struct Lemmatization {
     pub id: i32,
     pub source: String,
