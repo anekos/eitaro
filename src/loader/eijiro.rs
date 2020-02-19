@@ -95,6 +95,18 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
         Ok(())
     }
 
+    fn parse(writer: &mut DictionaryWriter, key: &str, source: &str) -> AppResultU {
+        let parsed = parse_line(&source)?;
+
+        for it in &parsed {
+            if let crate::dictionary::Text::Tag(t) = it {
+                writer.tag(key, t)?;
+            }
+        }
+
+        writer.define(key, parsed)
+    }
+
     if_let_some!(sep = line.find(" : "), Ok(()));
     let (left, right) = line.split_at(sep);
     let right = &right[3..];
@@ -114,18 +126,14 @@ fn load_line(writer: &mut DictionaryWriter, line: &str) -> AppResultU {
             right.to_string()
         };
 
-        writer.insert(left, parse_line(&right)?)?;
-
-        return Ok(());
+        return parse(writer, left, &right);
     }
 
     extract_link(writer, left, &right)?;
     extract_aliases(writer, left, right)?;
     extract_level(writer, left, &right)?;
 
-    writer.insert(left, parse_line(&right)?)?;
-
-    Ok(())
+    parse(writer, left, &right)
 }
 
 

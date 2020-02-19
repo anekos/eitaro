@@ -21,8 +21,16 @@ pub enum AppError {
     Bincode(Box<bincode::ErrorKind>),
     #[fail(display = "CSV Error: {}", 0)]
     Csv(csv::Error),
+    #[fail(display = "Deserialization error: {}", 0)]
+    Deserialization(serde_json::Error),
     #[fail(display = "Dictionary format ({:?}) error: {}", 0, 1)]
     DictionaryFormat(DictionaryFormat, &'static str),
+    #[fail(display = "Diesel error: {}", 0)]
+    Diesel(diesel::result::Error),
+    #[fail(display = "Connection error: {}", 0)]
+    DieselConnection(diesel::result::ConnectionError),
+    #[fail(display = "Migration error: {}", 0)]
+    DieselMigration(diesel::migration::RunMigrationsError),
     #[fail(display = "Error: {}", 0)]
     Eitaro(&'static str),
     #[fail(display = "Encoding error: {}", 0)]
@@ -49,6 +57,8 @@ pub enum AppError {
     Regex(regex::Error),
     #[fail(display = "Error: {}", 0)]
     Standard(String),
+    #[fail(display = "Unexpect error: {}", 0)]
+    Unexpect(&'static str),
     #[fail(display = "UTF8 conversion error: {}", 0)]
     Utf8(std::str::Utf8Error),
     #[fail(display = "Void")]
@@ -70,6 +80,10 @@ macro_rules! define_error {
 define_error!(Box<bincode::ErrorKind>, Bincode);
 define_error!(app_dirs::AppDirsError, AppDirs);
 define_error!(csv::Error, Csv);
+define_error!(serde_json::Error, Deserialization);
+define_error!(diesel::migration::RunMigrationsError, DieselMigration);
+define_error!(diesel::result::ConnectionError, DieselConnection);
+define_error!(diesel::result::Error, Diesel);
 define_error!(kv::Error, Kv);
 define_error!(pom::Error, Pom);
 define_error!(regex::Error, Regex);

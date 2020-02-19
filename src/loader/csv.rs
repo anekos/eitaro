@@ -27,7 +27,7 @@ impl Loader for CsvLoader {
                 return Err(AppError::DictionaryFormat(Csv, "Too few columns"))
             }
 
-            writer.insert(&columns[0], parse_line(&columns[1])?)?;
+            writer.define(&columns[0], parse_line(&columns[1])?)?;
         }
 
         Ok(())

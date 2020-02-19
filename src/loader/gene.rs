@@ -30,7 +30,7 @@ impl Loader for GeneLoader {
         for line in source.lines().skip(2) {
             if let Some(key) = key_buffer.take() {
                 let definition = parse_line(line)?;
-                writer.insert(key, definition)?;
+                writer.define(key, definition)?;
             } else {
                 key_buffer = Some(line)
             }

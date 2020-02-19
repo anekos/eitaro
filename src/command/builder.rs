@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use separator::Separatable;
 use structopt::StructOpt;
 
 use crate::dictionary::Dictionary;
@@ -39,7 +40,7 @@ pub fn build_dictionary<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result
         Ok(())
     })?;
 
-    println!("Finished: {} words, {} aliases", stat.words, stat.aliases);
+    println!("Finished: {} words, {} aliases", stat.words.separated_string(), stat.aliases.separated_string());
 
     Ok(())
 }

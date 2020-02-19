@@ -1,15 +1,9 @@
 
 // ref: http://norvig.com/spell-correct.html
 
-use std::path::Path;
-use std::io::{BufReader, Read};
-use std::fs::File;
 use std::collections::HashSet;
 
-use bincode::deserialize;
 use strsim::jaro_winkler;
-
-use crate::errors::AppResult;
 
 
 
@@ -17,20 +11,11 @@ const LETTERS: &str = "abcdefghijklmnopqrstuvwxyz";
 
 
 pub struct Corrector {
-    keys: HashSet<String>,
+    pub keys: HashSet<String>,
 }
 
 
 impl Corrector {
-    pub fn load<T: AsRef<Path>>(path: &T) -> AppResult<Self> {
-        let file = File::open(&path)?;
-        let mut file = BufReader::new(file);
-        let mut buffer = vec![];
-        file.read_to_end(&mut buffer)?;
-        let keys = deserialize(&buffer)?;
-        Ok(Self { keys })
-    }
-
     pub fn correct(&self, word: &str) -> Vec<String> {
         let word = word.to_lowercase();
         let candidates = build_complex_candidates(&word);

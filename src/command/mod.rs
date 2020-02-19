@@ -2,6 +2,7 @@
 pub mod analyze;
 pub mod builder;
 pub mod completions;
+pub mod database;
 pub mod export;
 pub mod html;
 pub mod http;

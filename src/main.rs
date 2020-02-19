@@ -1,9 +1,13 @@
 
 use std::process::exit;
 
+#[macro_use]
+extern crate diesel;
+
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
+#[macro_use] mod db;
 mod command;
 mod correction;
 mod delay;
@@ -17,7 +21,6 @@ mod str_utils;
 mod types;
 
 use crate::errors::{AppError, AppResultU};
-
 
 
 
@@ -37,6 +40,8 @@ pub enum Command {
     Build(command::builder::Opt),
     /// Generate completions script for this command
     Completions(command::completions::Opt),
+    /// Access dictionary database using sqlite
+    Database(command::database::Opt),
     /// Export the definitions for the given words (STDIN)
     Export(command::export::Opt),
     /// Output HTML fragment
@@ -77,6 +82,8 @@ fn _main() -> AppResultU {
                 command::builder::build_dictionary(opt, &dictionary_path),
             Completions(opt) =>
                 command::completions::generate(opt, Opt::clap()),
+            Database(opt) =>
+                command::database::shell(opt, &dictionary_path),
             Export(opt) =>
                 command::export::export(opt, &dictionary_path),
             Html(opt) =>
