@@ -17,6 +17,11 @@ pub struct Corrector {
 
 impl Corrector {
     pub fn correct(&self, word: &str) -> Vec<String> {
+        // build_complex_candidates is not for non ASCII string
+        if !word.chars().all(|it| it.is_ascii_alphabetic()) {
+            return vec![];
+        }
+
         let word = word.to_lowercase();
         let candidates = build_complex_candidates(&word);
 
