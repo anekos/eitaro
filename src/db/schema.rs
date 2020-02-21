@@ -11,6 +11,7 @@ table! {
         id -> Integer,
         term -> Text,
         definition -> Text,
+        text -> Text,
     }
 }
 

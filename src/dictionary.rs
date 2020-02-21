@@ -400,12 +400,22 @@ impl<'a> DictionaryWriter<'a> {
     pub fn define(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
         let lkey = key.to_lowercase();
 
+        let mut buffer = "".to_owned();
+        for it in &content {
+            if let Some(s) = it.text_for_search() {
+                if !buffer.is_empty() {
+                    buffer.push(' ');
+                }
+                buffer.push_str(s);
+            }
+        }
+
         let def = Definition { key: key.to_owned(), content };
 
         diesel_query!(definitions [E R] {
             let serialized = serde_json::to_string(&def).unwrap();
             diesel::insert_into(d::definitions)
-                .values((d::term.eq(lkey), d::definition.eq(serialized)))
+                .values((d::term.eq(lkey), d::definition.eq(serialized), d::text.eq(&buffer)))
                 .execute(self.connection)?;
         });
 
@@ -439,4 +449,17 @@ impl Default for Definition {
         Definition { key: "dummy-key".to_owned(), content: vec![Text::Note("dummy-content".to_owned())] }
     }
 
+}
+
+impl Text {
+    fn text_for_search(&self) -> Option<&str> {
+        use self::Text::*;
+
+        match self {
+            Annot(s) | Definition(s) | Example(s) | Information(s) | Note(s) =>
+                Some(s),
+            Class(_) | Countability(_) | Error(_) | Etymology(_) | Tag(_) | Word(_) =>
+                None,
+        }
+    }
 }
