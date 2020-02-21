@@ -69,6 +69,28 @@ impl Dictionary {
         }
     }
 
+    pub fn correct(&mut self, word: &str) -> Vec<String> {
+        let corrector = self.corrector.get_or_create(|| {
+            let connection = self.connect_db()?;
+            let keys = diesel_query!(definitions [Q R] {
+                d::definitions
+                    .select(d::term)
+                    .load::<String>(&connection)?
+            });
+            Ok(Corrector { keys: keys.into_iter().collect() })
+        });
+
+        match corrector {
+            Ok(corrector) => {
+                corrector.correct(word)
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+                vec![]
+            }
+        }
+    }
+
     pub fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         let mut dic = Dictionary::new(dictionary_path);
         Ok(dic.get_smart(&word)?)
@@ -169,28 +191,6 @@ impl Dictionary {
     pub fn lemmatize(&mut self, word: &str) -> AppResult<String> {
         let connection = self.connect_db()?;
         lemmatize(&connection, word)
-    }
-
-    pub fn correct(&mut self, word: &str) -> Vec<String> {
-        let corrector = self.corrector.get_or_create(|| {
-            let connection = self.connect_db()?;
-            let keys = diesel_query!(definitions [Q R] {
-                d::definitions
-                    .select(d::term)
-                    .load::<String>(&connection)?
-            });
-            Ok(Corrector { keys: keys.into_iter().collect() })
-        });
-
-        match corrector {
-            Ok(corrector) => {
-                corrector.correct(word)
-            }
-            Err(error) => {
-                eprintln!("{}", error);
-                vec![]
-            }
-        }
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
