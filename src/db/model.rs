@@ -10,6 +10,7 @@ pub struct Definition {
     pub id: i32,
     pub term: String,
     pub definition: String,
+    pub text: String,
 }
 
 #[derive(Queryable)]

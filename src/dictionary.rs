@@ -69,6 +69,28 @@ impl Dictionary {
         }
     }
 
+    pub fn correct(&mut self, word: &str) -> Vec<String> {
+        let corrector = self.corrector.get_or_create(|| {
+            let connection = self.connect_db()?;
+            let keys = diesel_query!(definitions [Q R] {
+                d::definitions
+                    .select(d::term)
+                    .load::<String>(&connection)?
+            });
+            Ok(Corrector { keys: keys.into_iter().collect() })
+        });
+
+        match corrector {
+            Ok(corrector) => {
+                corrector.correct(word)
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+                vec![]
+            }
+        }
+    }
+
     pub fn get_word<T: AsRef<Path>>(dictionary_path: &T, word: &str) -> Result<Option<Vec<Entry>>, AppError> {
         let mut dic = Dictionary::new(dictionary_path);
         Ok(dic.get_smart(&word)?)
@@ -171,26 +193,54 @@ impl Dictionary {
         lemmatize(&connection, word)
     }
 
-    pub fn correct(&mut self, word: &str) -> Vec<String> {
-        let corrector = self.corrector.get_or_create(|| {
-            let connection = self.connect_db()?;
-            let keys = diesel_query!(definitions [Q R] {
-                d::definitions
-                    .select(d::term)
-                    .load::<String>(&connection)?
-            });
-            Ok(Corrector { keys: keys.into_iter().collect() })
+    pub fn search(&self, query: &str) -> AppResult<Option<Vec<Entry>>> {
+        let connection = self.connect_db()?;
+
+        let found = diesel_query!(definitions, Definition [B E Q R T] {
+            use diesel::BoxableExpression;
+            use diesel::sql_types::Bool;
+
+            let truee = Box::new(d::term.eq(d::term));
+            let q: Box<dyn BoxableExpression<d::definitions, _, SqlType = Bool>> =
+                query.split_ascii_whitespace()
+                .map(|it| d::text.like(format!("%{}%", it)))
+                .fold(truee, |q, it| Box::new(q.and(it)));
+
+            d::definitions.
+                filter(q)
+                .order((d::term, d::id))
+                .load::<Definition>(&connection)?
         });
 
-        match corrector {
-            Ok(corrector) => {
-                corrector.correct(word)
-            }
-            Err(error) => {
-                eprintln!("{}", error);
-                vec![]
+        if found.is_empty() {
+            return Ok(None)
+        }
+
+        let defs: serde_json::Result<Vec<(String, Definition)>> =
+            found.into_iter().map(|it| serde_json::from_str::<Definition>(&it.definition).map(|d| (it.term, d))).collect();
+        let defs = defs?;
+
+        let mut result = vec![];
+        let mut buffer = vec![];
+        let mut last_key = defs[0].0.clone();
+
+        for (key, def) in defs {
+            if key == last_key {
+                buffer.push(def);
+            } else {
+                let mut definitions = vec![def];
+                let mut key = key;
+                std::mem::swap(&mut buffer, &mut definitions);
+                std::mem::swap(&mut key, &mut last_key);
+                result.push(Entry { key, definitions });
             }
         }
+
+        if !buffer.is_empty() {
+            result.push(Entry { key: last_key, definitions: buffer });
+        }
+
+        Ok(Some(result))
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
@@ -366,7 +416,6 @@ fn stem(word: &str) -> Vec<String> {
 
 
 
-
 impl<'a> DictionaryWriter<'a> {
     fn new(connection: &'a SqliteConnection) -> Self {
         DictionaryWriter {
@@ -400,12 +449,22 @@ impl<'a> DictionaryWriter<'a> {
     pub fn define(&mut self, key: &str, content: Vec<Text>) -> AppResultU {
         let lkey = key.to_lowercase();
 
+        let mut buffer = "".to_owned();
+        for it in &content {
+            if let Some(s) = it.text_for_search() {
+                if !buffer.is_empty() {
+                    buffer.push(' ');
+                }
+                buffer.push_str(s);
+            }
+        }
+
         let def = Definition { key: key.to_owned(), content };
 
         diesel_query!(definitions [E R] {
             let serialized = serde_json::to_string(&def).unwrap();
             diesel::insert_into(d::definitions)
-                .values((d::term.eq(lkey), d::definition.eq(serialized)))
+                .values((d::term.eq(lkey), d::definition.eq(serialized), d::text.eq(&buffer)))
                 .execute(self.connection)?;
         });
 
@@ -439,4 +498,17 @@ impl Default for Definition {
         Definition { key: "dummy-key".to_owned(), content: vec![Text::Note("dummy-content".to_owned())] }
     }
 
+}
+
+impl Text {
+    fn text_for_search(&self) -> Option<&str> {
+        use self::Text::*;
+
+        match self {
+            Annot(s) | Definition(s) | Example(s) | Information(s) | Note(s) =>
+                Some(s),
+            Class(_) | Countability(_) | Error(_) | Etymology(_) | Tag(_) | Word(_) =>
+                None,
+        }
+    }
 }

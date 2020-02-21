@@ -9,6 +9,13 @@ macro_rules! diesel_query {
         $body
     };
 
+    ([B $($use:ident)*] $body:expr) => {
+        {
+            use diesel::BoolExpressionMethods;
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
     ([E $($use:ident)*] $body:expr) => {
         {
             use diesel::ExpressionMethods;
@@ -33,6 +40,13 @@ macro_rules! diesel_query {
     ([R $($use:ident)*] $body:expr) => {
         {
             use diesel::RunQueryDsl;
+            diesel_query!([$($use)*] $body)
+        }
+    };
+
+    ([T $($use:ident)*] $body:expr) => {
+        {
+            use diesel::TextExpressionMethods;
             diesel_query!([$($use)*] $body)
         }
     };
