@@ -47,7 +47,10 @@ pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
         .auto_add_history(true)
         .build();
     let mut editor = rustyline::Editor::<()>::with_config(config);
-    editor.load_history(&get_history_path()?)?;
+    let history_path = get_history_path()?;
+    if history_path.exists() {
+        editor.load_history(&history_path)?;
+    }
 
     let mut dic = Dictionary::new(dictionary_path);
     let prompt = opt.prompt.unwrap_or_else(|| DEFAULT_PROMPT.to_owned());
