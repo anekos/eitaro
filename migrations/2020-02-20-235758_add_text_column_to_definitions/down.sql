@@ -7,3 +7,4 @@ CREATE TABLE definitions (
 );
 INSERT INTO definitions(id, term, definition) SELECT id, term, definition FROM definitions_temp;
 DROP TABLE definitions_temp;
+CREATE INDEX definitions_term_index ON definitions(term);
