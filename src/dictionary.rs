@@ -193,6 +193,56 @@ impl Dictionary {
         lemmatize(&connection, word)
     }
 
+    pub fn search(&self, query: &str) -> AppResult<Option<Vec<Entry>>> {
+        let connection = self.connect_db()?;
+
+        let found = diesel_query!(definitions, Definition [B E Q R T] {
+            use diesel::BoxableExpression;
+            use diesel::sql_types::Bool;
+
+            let truee = Box::new(d::term.eq(d::term));
+            let q: Box<dyn BoxableExpression<d::definitions, _, SqlType = Bool>> =
+                query.split_ascii_whitespace()
+                .map(|it| d::text.like(format!("%{}%", it)))
+                .fold(truee, |q, it| Box::new(q.and(it)));
+
+            d::definitions.
+                filter(q)
+                .order((d::term, d::id))
+                .load::<Definition>(&connection)?
+        });
+
+        if found.is_empty() {
+            return Ok(None)
+        }
+
+        let defs: serde_json::Result<Vec<(String, Definition)>> =
+            found.into_iter().map(|it| serde_json::from_str::<Definition>(&it.definition).map(|d| (it.term, d))).collect();
+        let defs = defs?;
+
+        let mut result = vec![];
+        let mut buffer = vec![];
+        let mut last_key = defs[0].0.clone();
+
+        for (key, def) in defs {
+            if key == last_key {
+                buffer.push(def);
+            } else {
+                let mut definitions = vec![def];
+                let mut key = key;
+                std::mem::swap(&mut buffer, &mut definitions);
+                std::mem::swap(&mut key, &mut last_key);
+                result.push(Entry { key, definitions });
+            }
+        }
+
+        if !buffer.is_empty() {
+            result.push(Entry { key: last_key, definitions: buffer });
+        }
+
+        Ok(Some(result))
+    }
+
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
         let connection = self.connect_db()?;
         run_pending_migrations(&connection)?;
@@ -363,7 +413,6 @@ fn stem(word: &str) -> Vec<String> {
 
     result
 }
-
 
 
 
