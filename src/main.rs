@@ -49,6 +49,7 @@ pub enum Command {
     /// Lemmatize
     Lemmatize(command::lemmatize::Opt),
     /// Get word level (SVL)
+    #[structopt(alias = "lv")]
     Level(command::level::Opt),
     /// Lookup
     Lookup(command::lookup::LookupOpt),
