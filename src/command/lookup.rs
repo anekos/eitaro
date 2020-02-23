@@ -32,7 +32,7 @@ pub struct LookupOpt {
 #[derive(Debug, Default, StructOpt)]
 pub struct ShellOpt {
     /// Prompt text
-    #[structopt(short, long)]
+    #[structopt(short, long, env="EITARO_PROMPT")]
     prompt: Option<String>,
 }
 
