@@ -25,7 +25,7 @@ use crate::errors::{AppError, AppResultU};
 
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "server")]
+#[structopt(name = "eitaro")]
 pub struct Opt {
     #[structopt(subcommand)]
     pub command: Option<Command>,
