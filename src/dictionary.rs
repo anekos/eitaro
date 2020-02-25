@@ -69,6 +69,8 @@ impl Dictionary {
     }
 
     pub fn correct(&mut self, word: &str) -> Vec<String> {
+        println!("Correcting...");
+
         let corrector = self.corrector.get_or_create(|| {
             let connection = self.connect_db()?;
             let keys = diesel_query!(definitions [Q R] {
