@@ -2,3 +2,4 @@
 **/*.rs.bk
 rusty-tags.vi
 *.zip
+migrations.sql

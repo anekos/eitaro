@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use array_tool::vec::Uniq;
 use diesel::connection::Connection;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::run_pending_migrations;
 use if_let_return::if_let_some;
 use lazy_init::Lazy;
 use regex::Regex;
@@ -244,8 +243,17 @@ impl Dictionary {
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
+        if self.path.exists() {
+            std::fs::remove_file(&self.path)?;
+        }
+
         let connection = self.connect_db()?;
-        run_pending_migrations(&connection)?;
+
+        diesel_query!([R] {
+            for sql in include_str!("../migrations.sql").split(';') {
+                diesel::sql_query(sql).execute(&connection)?;
+            }
+        });
 
         connection.transaction::<_, AppError, _>(|| {
             use crate::db::schema;
