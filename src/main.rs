@@ -106,12 +106,10 @@ fn _main() -> AppResultU {
             Words(opt) =>
                 command::words::extract(opt, &dictionary_path),
         }
+    } else if let Some(Command::Shell(opt)) = Opt::from_iter(&["", "shell"]).command {
+        command::lookup::shell(opt, &dictionary_path)
     } else {
-        if let Some(Command::Shell(opt)) = Opt::from_iter(&["", "shell"]).command {
-            command::lookup::shell(opt, &dictionary_path)
-        } else {
-            panic!("WTF: {:?}", Opt::from_iter(&["shell"]))
-        }
+        panic!("WTF: {:?}", Opt::from_iter(&["shell"]))
     }
 }
 
