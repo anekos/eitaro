@@ -1,9 +1,11 @@
 
+use std::path::Path;
 use std::process::exit;
 
 #[macro_use]
 extern crate diesel;
 
+use failure::Fail;
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
@@ -68,74 +70,79 @@ pub enum Command {
 
 
 
-fn _main() -> AppResultU {
+fn _main<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
     use self::Command::*;
-
-    let dictionary_path = path::get_dictionary_path()?;
 
     let opt = Opt::from_args();
 
     if let Some(command) = opt.command {
         match command {
             Analyze(opt) =>
-                command::analyze::analyze(opt, &dictionary_path),
+                command::analyze::analyze(opt, dictionary_path),
             Build(opt) =>
-                command::builder::build_dictionary(opt, &dictionary_path),
+                command::builder::build_dictionary(opt, dictionary_path),
             Completions(opt) =>
                 command::completions::generate(opt, Opt::clap()),
             Database(opt) =>
-                command::database::shell(opt, &dictionary_path),
+                command::database::shell(opt, dictionary_path),
             Export(opt) =>
-                command::export::export(opt, &dictionary_path),
+                command::export::export(opt, dictionary_path),
             Html(opt) =>
-                command::html::lookup(opt, &dictionary_path),
+                command::html::lookup(opt, dictionary_path),
             Shell(opt) =>
-                command::lookup::shell(opt, &dictionary_path),
+                command::lookup::shell(opt, dictionary_path),
             Lemmatize(opt) =>
-                command::lemmatize::lemmatize(opt, &dictionary_path),
+                command::lemmatize::lemmatize(opt, dictionary_path),
             Level(opt) =>
-                command::level::level(opt, &dictionary_path),
+                command::level::level(opt, dictionary_path),
             Lookup(opt) =>
-                command::lookup::lookup(opt, &dictionary_path),
+                command::lookup::lookup(opt, dictionary_path),
             Path =>
-                command::path::path(&dictionary_path),
+                command::path::path(dictionary_path),
             Server(opt) =>
-                command::http::start_server(opt, dictionary_path),
+                command::http::start_server(opt, dictionary_path.as_ref().to_path_buf()),
             Untypo(opt) =>
-                command::untypo::untypo(opt, &dictionary_path),
+                command::untypo::untypo(opt, dictionary_path),
             Words(opt) =>
-                command::words::extract(opt, &dictionary_path),
+                command::words::extract(opt, dictionary_path),
         }
     } else if let Some(Command::Shell(opt)) = Opt::from_iter(&["", "shell"]).command {
-        command::lookup::shell(opt, &dictionary_path)
+        command::lookup::shell(opt, dictionary_path)
     } else {
         panic!("WTF: {:?}", Opt::from_iter(&["shell"]))
     }
 }
 
 fn main() {
-    use failure::Fail;
-
     // Supress `failed printing to stdout: Broken pipe (os error 32)`
     unsafe {
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }
 
-    match _main() {
+
+    let dictionary_path = path::get_dictionary_path().expect("Failed to get dictionary path");
+
+    match _main(&dictionary_path) {
         Err(AppError::Void) | Ok(_) => (),
         Err(err) => {
-            let mut fail: &dyn Fail = &err;
-            let mut message = err.to_string();
-
-            while let Some(cause) = fail.cause() {
-                message.push_str(&format!("\n\tcaused by: {}", cause));
-                fail = cause;
+            if let AppError::Diesel(_) = err {
+                eprintln!("Please build dictionary before use. See `eitaro build --help`");
+                eprintln!("");
             }
-
-            eprintln!("Error: {}", message);
-
-            exit(1);
-
+            print_error(&err);
         }
     }
+}
+
+fn print_error(mut fail: &dyn Fail) {
+    let mut message = fail.to_string();
+
+    while let Some(cause) = fail.cause() {
+        message.push_str(&format!("\n\tcaused by: {}", cause));
+        fail = cause;
+    }
+
+    eprintln!("Error: {}", message);
+
+    exit(1);
 }
