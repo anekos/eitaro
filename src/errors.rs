@@ -29,8 +29,6 @@ pub enum AppError {
     Diesel(diesel::result::Error),
     #[fail(display = "Connection error: {}", 0)]
     DieselConnection(diesel::result::ConnectionError),
-    #[fail(display = "Migration error: {}", 0)]
-    DieselMigration(diesel::migration::RunMigrationsError),
     #[fail(display = "Error: {}", 0)]
     Eitaro(&'static str),
     #[fail(display = "Encoding error: {}", 0)]
@@ -81,7 +79,6 @@ define_error!(Box<bincode::ErrorKind>, Bincode);
 define_error!(app_dirs::AppDirsError, AppDirs);
 define_error!(csv::Error, Csv);
 define_error!(serde_json::Error, Deserialization);
-define_error!(diesel::migration::RunMigrationsError, DieselMigration);
 define_error!(diesel::result::ConnectionError, DieselConnection);
 define_error!(diesel::result::Error, Diesel);
 define_error!(kv::Error, Kv);
