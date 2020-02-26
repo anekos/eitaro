@@ -7,6 +7,7 @@ use array_tool::vec::Uniq;
 use diesel::connection::Connection;
 use diesel::sqlite::SqliteConnection;
 use if_let_return::if_let_some;
+use indexmap::indexset;
 use lazy_init::Lazy;
 use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
@@ -105,30 +106,24 @@ impl Dictionary {
             Some(result)
         }
 
+        let connection = self.connect_db()?;
+
+        let mut candidates = indexset!(word.to_owned());
         let mut result = vec![];
 
-        let connection = self.connect_db()?;
-
-        if let Some(entry) = lookup_entry(&connection, word)? {
-            result.push(entry);
+        for stemmed in stem(&word) {
+            candidates.insert(stemmed);
         }
 
-        let connection = self.connect_db()?;
         if let Some(aliases) = lookup_unaliased(&connection, word)? {
             for alias in aliases.split('\n') {
-                if alias != word {
-                    if let Some(entry) = lookup_entry(&connection, alias)? {
-                        result.push(entry);
-                    }
-                }
+                candidates.insert(alias.to_owned());
             }
         }
 
-        if result.is_empty() {
-            for stemmed in stem(&word) {
-                if let Some(entry) = lookup_entry(&connection, &stemmed)? {
-                    result.push(entry);
-                }
+        for candidate in &candidates {
+            if let Some(entry) = lookup_entry(&connection, candidate)? {
+                result.push(entry);
             }
         }
 
