@@ -1,11 +1,12 @@
 
-use std::io::{BufWriter, Error as IOError, stdout, Write};
+use std::io::{Error as IOError, Write};
 use std::sync::mpsc::Receiver;
 
 use deco::{dprintln, dwrite, dwriteln};
 
 use crate::dictionary::{Entry, Text};
 use crate::errors::AppResultU;
+use crate::pager::with_pager;
 
 
 
@@ -43,24 +44,21 @@ pub fn print(entries: Vec<Entry>) -> AppResultU {
         }
     }
 
-    let out = stdout();
-    let out = out.lock();
-    let mut out = BufWriter::new(out);
-
-    for entry in entries {
-        color_key(&mut out, &entry.key)?;
-        for definition in &entry.definitions {
-            for (index, text) in definition.content.iter().enumerate() {
-                if 0 < index {
-                    write!(out, " ")?;
+    with_pager(|out| {
+        for entry in entries {
+            color_key(out, &entry.key)?;
+            for definition in &entry.definitions {
+                for (index, text) in definition.content.iter().enumerate() {
+                    if 0 < index {
+                        write!(out, " ")?;
+                    }
+                    color(out, text)?;
                 }
-                color(&mut out, text)?;
+                writeln!(out)?;
             }
-            writeln!(out)?;
         }
-    }
-
-    Ok(())
+        Ok(())
+    })
 }
 
 pub fn print_not_found() {

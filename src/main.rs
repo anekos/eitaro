@@ -16,6 +16,7 @@ mod delay;
 mod dictionary;
 mod errors;
 mod loader;
+mod pager;
 mod parser;
 mod path;
 mod screen;

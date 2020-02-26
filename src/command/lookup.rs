@@ -39,7 +39,7 @@ pub struct ShellOpt {
 
 pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print_lines(&mut dic, &opt.word, opt.color, opt.n, true)
+    lookup_and_print(&mut dic, &opt.word, opt.color, opt.n, true, true)
 }
 
 pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
@@ -61,7 +61,7 @@ pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
                 if input.is_empty() {
                     continue;
                 }
-                lookup_and_print_lines(&mut dic, input, true, None, false)?;
+                lookup_and_print(&mut dic, input, true, None, true, true)?;
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
@@ -73,13 +73,6 @@ pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
     }
 
     editor.save_history(&get_history_path()?)?;
-    Ok(())
-}
-
-fn lookup_and_print_lines(dic: &mut Dictionary, s: &str, color: bool, limit: Option<usize>, pager: bool) -> AppResultU {
-    for line in s.lines() {
-        lookup_and_print(dic, line, color, limit, true, pager)?;
-    }
     Ok(())
 }
 
@@ -95,9 +88,6 @@ fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option
     }
 
     if let Some(found) = found {
-        if pager {
-            setup_pager();
-        }
         if color {
             screen::color::print(found)?;
         } else {
@@ -165,8 +155,4 @@ fn append_history(line: &str) -> AppResultU {
     let mut file = OpenOptions::new().write(true).append(true).create(true).open(path)?;
     writeln!(file, "{}", line)?;
     Ok(())
-}
-
-fn setup_pager() {
-    pager::Pager::with_default_pager("less --quit-if-one-screen --RAW-CONTROL-CHARS --no-init").setup();
 }
