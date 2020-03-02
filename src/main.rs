@@ -44,6 +44,7 @@ pub enum Command {
     /// Generate completions script for this command
     Completions(command::completions::Opt),
     /// Access dictionary database using sqlite
+    #[structopt(alias = "db")]
     Database(command::database::Opt),
     /// Export the definitions for the given words (STDIN)
     Export(command::export::Opt),
