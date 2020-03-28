@@ -27,6 +27,9 @@ pub struct Opt {
     /// Font size
     #[structopt(short = "s", long = "font-size")]
     pub font_size: Option<f64>,
+    /// Window Role
+    #[structopt(short = "r", long = "role")]
+    pub role: Option<String>,
 }
 
 
@@ -36,7 +39,7 @@ pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     WidgetExt::set_name(&window, "application");
     window.set_title("eitaro");
-    window.set_role("eitaro");
+    window.set_role(opt.role.as_ref().map(String::as_str).unwrap_or("eitaro"));
     #[allow(deprecated)]
     window.set_wmclass("eitaro", "eitaro");
     window.set_border_width(0);
