@@ -23,6 +23,8 @@ pub struct LookupOpt {
     /// No Color
     #[structopt(long="no-color", parse(from_flag = std::ops::Not::not))]
     color: bool,
+    #[structopt(long="no-correction", parse(from_flag = std::ops::Not::not))]
+    correction: bool,
     /// Take only n related entries
     #[structopt(short, long)]
     n: Option<usize>
@@ -39,7 +41,7 @@ pub struct ShellOpt {
 
 pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print(&mut dic, &opt.word, opt.color, opt.n, true, true)
+    lookup_and_print(&mut dic, &opt.word, opt.color, opt.n, opt.correction, true)
 }
 
 pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
