@@ -184,6 +184,17 @@ impl Dictionary {
         Ok(None)
     }
 
+    pub fn keys(&mut self) -> AppResult<Vec<String>> {
+        let connection = self.connect_db()?;
+        let keys = diesel_query!(definitions [Q R] {
+            d::definitions
+                .select(d::term)
+                .load::<String>(&connection)?
+        });
+
+        return Ok(keys)
+    }
+
     pub fn lemmatize(&mut self, word: &str) -> AppResult<String> {
         let connection = self.connect_db()?;
         lemmatize(&connection, word)
