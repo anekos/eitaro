@@ -50,6 +50,8 @@ pub enum Command {
     Export(command::export::Opt),
     /// Output HTML fragment
     Html(command::html::Opt),
+    /// Output keys
+    Lemmas(command::lemmas::Opt),
     /// Lemmatize
     Lemmatize(command::lemmatize::Opt),
     /// Get word level (SVL)
@@ -91,6 +93,8 @@ fn _main<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
                 command::export::export(opt, dictionary_path),
             Html(opt) =>
                 command::html::lookup(opt, dictionary_path),
+            Lemmas(opt) =>
+                command::lemmas::lemmas(opt, dictionary_path),
             Shell(opt) =>
                 command::lookup::shell(opt, dictionary_path),
             Lemmatize(opt) =>
