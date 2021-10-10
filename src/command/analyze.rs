@@ -180,7 +180,7 @@ fn analyze_svl(common: &Common) -> AppResultU {
 
     println!("Word level:");
     println!(
-        "{}{:15} {:7}  {:>6}  {:>6}    {:6}  {:>6}  {:>6}",
+        "{}{:15}  {:6}  {:>6}  {:>6}    {:6}  {:>6}  {:>6}",
         INDENT,
         "Level",
         "Unique",
