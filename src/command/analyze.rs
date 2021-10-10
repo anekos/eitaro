@@ -31,18 +31,21 @@ pub struct Opt {
     /// Count sentences and words
     #[structopt(short, long)]
     pub count: bool,
+    /// Words in SVL
+    #[structopt(short = "s", long = "in-svl")]
+    pub in_svl: bool,
     /// Words not in dictionary
-    #[structopt(short = "n", long = "not-in")]
+    #[structopt(short = "D", long = "not-in-dict")]
     pub not_in_dictionary: bool,
+    /// Words not in SVL
+    #[structopt(short = "S", long = "not-in-svl")]
+    pub not_in_svl: bool,
     /// Minimum count
     #[structopt(short = "m", long = "minimum-count")]
     pub minimum_count: Option<usize>,
-    /// Words not in SVL
-    #[structopt(short = "o", long = "out")]
-    pub out_of_level: bool,
-    /// Word level using SVL
-    #[structopt(short, long)]
-    pub svl: bool,
+    /// Word stats using SVL
+    #[structopt(long = "stats")]
+    pub svl_stats: bool,
     /// Word usage ranking (without short or level 1 words)
     #[structopt(short, long, name = "N")]
     pub usage: Option<usize>,
@@ -81,17 +84,27 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
     if opt.count || opt.all {
         analyze_count(&common, &text)?;
     }
-    if opt.svl || opt.all {
+    if opt.svl_stats || opt.all {
         analyze_svl(&common)?;
     }
     if let Some(n) = opt.usage.or_else(|| if opt.all { Some(20) } else { None }) {
         analyze_usage(&mut dic, &common, n)?;
     }
-    if opt.out_of_level || opt.all {
-        analyze_only_given_level(&common, "In SVL", Level::OutOf, opt.minimum_count)?;
+    if opt.in_svl || opt.all {
+        let is_leveled = |lv| {
+            if let Level::Leveled(_) = lv {
+                true
+            } else{
+                false
+            }
+        };
+        analyze_only_given_level(&common, "In SVL", is_leveled, opt.minimum_count)?;
+    }
+    if opt.not_in_svl || opt.all {
+        analyze_only_given_level(&common, "Not In SVL", |it| it == Level::OutOf, opt.minimum_count)?;
     }
     if opt.not_in_dictionary || opt.all {
-        analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary, opt.minimum_count)?;
+        analyze_only_given_level(&common, "Not In Dictionary", |it| it == Level::NotInDictionary, opt.minimum_count)?;
     }
 
     Ok(())
@@ -221,10 +234,11 @@ fn analyze_svl(common: &Common) -> AppResultU {
     Ok(())
 }
 
-fn analyze_only_given_level(common: &Common, name: &str, level: Level, minimum: Option<usize>) -> AppResultU {
+fn analyze_only_given_level<F>(common: &Common, name: &str, valid_level: F, minimum: Option<usize>) -> AppResultU
+where F: Fn(Level) -> bool {
     println!("{}:", name);
     let mut words: Vec<&Word> = common.words.iter()
-        .filter(|it| it.level == level)
+        .filter(|it| valid_level(it.level))
         .filter(|it| 2 < it.word.len())
         .collect();
     words.sort_by(|a, b| {
@@ -243,7 +257,12 @@ fn analyze_only_given_level(common: &Common, name: &str, level: Level, minimum: 
             }
         }
         results += 1;
-        println!("{}{:width$}. {:16} {:>7}", INDENT, results, word.word, word.count.separated_string(), width = width);
+        print!("{}{:width$}. {:16} {:>7}", INDENT, results, word.word, word.count.separated_string(), width = width);
+        if let Level::Leveled(lv) = word.level {
+            println!(" L{:02}", lv);
+        } else {
+            println!();
+        }
     }
     println!();
     Ok(())
