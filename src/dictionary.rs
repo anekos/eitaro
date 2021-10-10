@@ -192,7 +192,7 @@ impl Dictionary {
                 .load::<String>(&connection)?
         });
 
-        return Ok(keys)
+        Ok(keys)
     }
 
     pub fn lemmatize(&mut self, word: &str) -> AppResult<String> {
