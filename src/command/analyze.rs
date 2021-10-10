@@ -1,5 +1,6 @@
 
-use std::collections::{BTreeSet, HashMap};
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt;
 use std::io::{stdin, Read};
 use std::path::Path;
@@ -22,7 +23,7 @@ enum Level {
 
 struct LevelIter(Level);
 
-#[derive(Debug, Default, Eq, PartialEq, StructOpt)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, StructOpt)]
 pub struct Opt {
     /// All
     #[structopt(short, long)]
@@ -33,6 +34,9 @@ pub struct Opt {
     /// Words not in dictionary
     #[structopt(short = "n", long = "not-in")]
     pub not_in_dictionary: bool,
+    /// Minimum count
+    #[structopt(short = "m", long = "minimum-count")]
+    pub minimum_count: Option<usize>,
     /// Words not in SVL
     #[structopt(short = "o", long = "out")]
     pub out_of_level: bool,
@@ -66,8 +70,12 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
 
     let common = analyze_common(&mut dic, &text)?;
 
-    if opt == Opt::default() {
-        opt = Opt { all: true, ..Default::default() };
+    {
+        let mut opt_to_check = opt.clone();
+        opt_to_check.minimum_count = None;
+        if opt_to_check == Opt::default() {
+            opt = Opt { all: true, minimum_count: opt.minimum_count, ..Default::default() };
+        }
     }
 
     if opt.count || opt.all {
@@ -80,10 +88,10 @@ pub fn analyze<T: AsRef<Path>>(mut opt: Opt, dictionary_path: &T) -> AppResultU 
         analyze_usage(&mut dic, &common, n)?;
     }
     if opt.out_of_level || opt.all {
-        analyze_only_given_level(&common, "In SVL", Level::OutOf)?;
+        analyze_only_given_level(&common, "In SVL", Level::OutOf, opt.minimum_count)?;
     }
     if opt.not_in_dictionary || opt.all {
-        analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary)?;
+        analyze_only_given_level(&common, "Not In Dictionary", Level::NotInDictionary, opt.minimum_count)?;
     }
 
     Ok(())
@@ -157,7 +165,7 @@ fn analyze_svl(common: &Common) -> AppResultU {
     let mut cumulative_total = 0;
 
     for word in &common.words {
-        if word.word.len() <= 2 {
+        if word.word.len() <= 3 {
             continue;
         }
 
@@ -172,7 +180,7 @@ fn analyze_svl(common: &Common) -> AppResultU {
 
     println!("Word level:");
     println!(
-        "{}{:15} {:7}  {:>6}  {:>6}   {:7}  {:>6}  {:>6}",
+        "{}{:15} {:7}  {:>6}  {:>6}    {:6}  {:>6}  {:>6}",
         INDENT,
         "Level",
         "Unique",
@@ -213,16 +221,29 @@ fn analyze_svl(common: &Common) -> AppResultU {
     Ok(())
 }
 
-fn analyze_only_given_level(common: &Common, name: &str, level: Level) -> AppResultU {
+fn analyze_only_given_level(common: &Common, name: &str, level: Level, minimum: Option<usize>) -> AppResultU {
     println!("{}:", name);
-    let mut words: Vec<&str> = common.words.iter()
+    let mut words: Vec<&Word> = common.words.iter()
         .filter(|it| it.level == level)
-        .map(|it| &*it.word)
+        .filter(|it| 2 < it.word.len())
         .collect();
-    words.sort();
-    let words: BTreeSet<&str> = words.into_iter().collect();
+    words.sort_by(|a, b| {
+        let c1 = b.count.cmp(&a.count);
+        if c1 == Ordering::Equal {
+            return a.word.cmp(&b.word);
+        }
+        c1
+    });
+    let width = (words.len() as f64).log(10.0) as usize + 1;
+    let mut results = 0;
     for word in words {
-        println!("{}{}", INDENT, word);
+        if let Some(min) = minimum {
+            if word.count < min {
+                continue;
+            }
+        }
+        results += 1;
+        println!("{}{:width$}. {:16} {:>7}", INDENT, results, word.word, word.count.separated_string(), width = width);
     }
     println!();
     Ok(())
@@ -243,7 +264,7 @@ fn analyze_usage(dictionary: &mut Dictionary, common: &Common, n: usize) -> AppR
         }
 
         results += 1;
-        println!("{}{:width$}. {:10} {:>7}", INDENT, results, word, count.separated_string(), width = width);
+        println!("{}{:width$}. {:16} {:>7}", INDENT, results, word, count.separated_string(), width = width);
         if n <= results {
             break;
         }
