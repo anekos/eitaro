@@ -34,7 +34,15 @@ pub struct Opt {
 
 
 pub fn main(tx: SyncSender<Option<Vec<Entry>>>, rx: Receiver<Option<Vec<Entry>>>, opt: Opt, dictionary_path: PathBuf) {
-    gtk::init().unwrap();
+    // Workaround - https://github.com/gtk-rs/gtk/issues/405#issuecomment-261809506
+    // gtk::init().unwrap();
+    unsafe {
+        use std::ptr;
+        use gtk_sys::gtk_init;
+        let mut argc = 0;
+        gtk_init(&mut argc, ptr::null_mut());
+        gtk::set_initialized();
+    }
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     WidgetExt::set_name(&window, "application");
