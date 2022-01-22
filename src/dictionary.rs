@@ -311,6 +311,21 @@ impl Dictionary {
 
         Ok(result)
     }
+
+    pub fn wordle_words(&self, min: u8, max: u8) -> AppResult<Vec<String>> {
+        let connection = self.connect_db()?;
+
+        let found = diesel_query!(levels [E Q R T] {
+            d::levels
+                .filter(d::level.ge(i32::from(min)))
+                .filter(d::level.le(i32::from(max)))
+                .filter(d::term.like("_____"))
+                .select(d::term)
+                .load::<String>(&connection)?
+        });
+
+        Ok(found)
+    }
 }
 
 
