@@ -39,9 +39,7 @@ impl Loader for JsonSimpleKeyValueLoader {
                     }
                     left = start;
                 }
-                if 0 < left {
-                    writer.define(&term, text(&def[left ..]))?;
-                }
+                writer.define(&term, text(&def[left ..]))?;
             }
         }
         Ok(())
