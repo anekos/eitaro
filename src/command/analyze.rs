@@ -116,7 +116,7 @@ fn analyze_common(dic: &mut Dictionary, text: &str) -> AppResult<Common> {
 
     let chars = str_utils::simple_words_pattern();
     for word in chars.find_iter(&text) {
-        let word = word.as_str();
+        let word: &str = word.into();
         let count = words.entry(word).or_default();
         *count += 1;
     }

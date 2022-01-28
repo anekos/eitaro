@@ -67,6 +67,8 @@ pub enum Command {
     Shell(command::lookup::ShellOpt),
     /// Untypo
     Untypo(command::untypo::Opt),
+    /// Play wordle
+    Wordle(command::wordle::Opt),
     /// Extract lemmatized words
     Words(command::words::Opt),
 }
@@ -109,6 +111,8 @@ fn _main<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
                 command::http::start_server(opt, dictionary_path.as_ref().to_path_buf()),
             Untypo(opt) =>
                 command::untypo::untypo(opt, dictionary_path),
+            Wordle(opt) =>
+                command::wordle::play(opt, dictionary_path),
             Words(opt) =>
                 command::words::extract(opt, dictionary_path),
         }
