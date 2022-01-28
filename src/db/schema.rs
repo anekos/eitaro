@@ -12,7 +12,7 @@ table! {
         term -> Text,
         definition -> Text,
         text -> Text,
-        source -> Text,
+        source -> Nullable<Text>,
     }
 }
 

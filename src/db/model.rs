@@ -11,7 +11,7 @@ pub struct Definition {
     pub term: String,
     pub definition: String,
     pub text: String,
-    pub source: String,
+    pub source: Option<String>,
 }
 
 #[derive(Queryable)]
