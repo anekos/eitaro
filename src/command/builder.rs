@@ -1,13 +1,16 @@
 
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use regex::Regex;
 use separator::Separatable;
 use structopt::StructOpt;
+use shellexpand;
 
 use crate::dictionary::Dictionary;
-use crate::errors::AppError;
+use crate::errors::{AppError, AppResult};
 use crate::loader::{csv, eijiro, ejdic, gene, Loader};
 use crate::types::DictionaryFormat;
 
@@ -23,12 +26,15 @@ pub fn build_dictionary<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result
     use DictionaryFormat::*;
 
     let mut dictionary = Dictionary::new(dictionary_path);
+    let named_pattern = Regex::new(r"^(\w+)@(.+)$")?;
 
-    let stat = dictionary.write(move |mut writer| {
+    let stat = dictionary.write(move |writer| {
         for file in &opt.files {
-            println!("[{}]", file.to_str().unwrap_or("-"));
-            let format = guess(file)?;
-            let mut file = File::open(file)?;
+            let (source, file) = extract_source_and_path(&file, &named_pattern)?;
+            println!("[{} ({})]", file, source.unwrap_or("-"));
+            let format = guess(&file.as_ref())?;
+            let mut file = File::open(file.as_ref())?;
+            let mut writer = writer.clone().with_source(source);
             match format {
                 Csv => csv::CsvLoader::default().load(&mut file, &mut writer)?,
                 Eijiro => eijiro::EijiroLoader::default().load(&mut file, &mut writer)?,
@@ -43,6 +49,22 @@ pub fn build_dictionary<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result
     println!("Finished: {} words, {} aliases", stat.words.separated_string(), stat.aliases.separated_string());
 
     Ok(())
+}
+
+fn extract_source_and_path<'a, T: AsRef<Path>>(file: &'a T, pattern: &Regex) -> AppResult<(Option<&'a str>, Cow<'a, str>)> {
+    let file = file.as_ref().to_str().ok_or(AppError::Unexpect("Invalid string"))?;
+    if let Some(caps) = pattern.captures(file) {
+        if caps.len() == 3 {
+            Ok((
+                Some(caps.get(1).unwrap().as_str()),
+                shellexpand::tilde(caps.get(2).unwrap().as_str())
+            ))
+        } else {
+            Ok((None, Cow::Borrowed(file)))
+        }
+    } else {
+        Ok((None, Cow::Borrowed(file)))
+    }
 }
 
 fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> {

@@ -12,6 +12,7 @@ table! {
         term -> Text,
         definition -> Text,
         text -> Text,
+        source -> Nullable<Text>,
     }
 }
 
@@ -24,7 +25,8 @@ table! {
 }
 
 table! {
-    levels (term) {
+    levels (id) {
+        id -> Integer,
         term -> Text,
         level -> Integer,
     }
