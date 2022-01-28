@@ -11,7 +11,7 @@ use shellexpand;
 
 use crate::dictionary::Dictionary;
 use crate::errors::{AppError, AppResult};
-use crate::loader::{csv, eijiro, ejdic, gene, Loader};
+use crate::loader::{csv, eijiro, ejdic, gene, json_simple_key_value, Loader};
 use crate::types::DictionaryFormat;
 
 
@@ -40,6 +40,7 @@ pub fn build_dictionary<T: AsRef<Path>>(opt: Opt, dictionary_path: &T) -> Result
                 Eijiro => eijiro::EijiroLoader::default().load(&mut file, &mut writer)?,
                 Ejdic => ejdic::EjdicLoader::default().load(&mut file, &mut writer)?,
                 Gene => gene::GeneLoader::default().load(&mut file, &mut writer)?,
+                JsonSimpleKeyValue => json_simple_key_value::JsonSimpleKeyValueLoader::default().load(&mut file, &mut writer)?,
             };
         }
         println!("[Finalize]");
@@ -80,6 +81,10 @@ fn guess<T: AsRef<Path>>(source_path: &T) -> Result<DictionaryFormat, AppError> 
     // 81a1 == ■
     if head.starts_with(b"\x81\xa1") {
         return Ok(DictionaryFormat::Eijiro);
+    }
+
+    if head.starts_with(b"{\"") {
+        return Ok(DictionaryFormat::JsonSimpleKeyValue)
     }
 
     if head.contains(&b'\t') {

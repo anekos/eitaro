@@ -8,6 +8,7 @@ pub mod csv;
 pub mod eijiro;
 pub mod ejdic;
 pub mod gene;
+pub mod json_simple_key_value;
 
 
 

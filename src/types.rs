@@ -7,4 +7,5 @@ pub enum DictionaryFormat {
     Eijiro,
     Ejdic,
     Gene,
+    JsonSimpleKeyValue,
 }
