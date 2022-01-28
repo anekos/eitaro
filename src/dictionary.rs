@@ -51,8 +51,10 @@ pub struct Entry {
     pub definitions: Vec<Definition>,
 }
 
+#[derive(Clone)]
 pub struct DictionaryWriter<'a> {
     connection: &'a SqliteConnection,
+    source: Option<&'a str>,
 }
 
 pub struct Stat {
@@ -262,7 +264,7 @@ impl Dictionary {
             diesel::delete(schema::lemmatizations::dsl::lemmatizations).execute(&connection)?;
             diesel::delete(schema::levels::dsl::levels).execute(&connection)?;
 
-            let mut writer = DictionaryWriter::new(&connection);
+            let mut writer = DictionaryWriter::new(&connection, None);
             f(&mut writer)?;
             stat(&connection)
         })
@@ -466,9 +468,17 @@ fn stem(word: &str) -> Vec<String> {
 
 
 impl<'a> DictionaryWriter<'a> {
-    fn new(connection: &'a SqliteConnection) -> Self {
+    fn new(connection: &'a SqliteConnection, source: Option<&'a str>) -> Self {
         DictionaryWriter {
             connection,
+            source
+        }
+    }
+
+    pub fn with_source(self, source: Option<&'a str>) -> Self {
+        DictionaryWriter {
+            connection: self.connection,
+            source,
         }
     }
 
@@ -513,7 +523,7 @@ impl<'a> DictionaryWriter<'a> {
         diesel_query!(definitions [E R] {
             let serialized = serde_json::to_string(&def).unwrap();
             diesel::insert_into(d::definitions)
-                .values((d::term.eq(lkey), d::definition.eq(serialized), d::text.eq(&buffer)))
+                .values((d::term.eq(lkey), d::definition.eq(serialized), d::text.eq(&buffer), d::source.eq(self.source)))
                 .execute(self.connection)?;
         });
 
