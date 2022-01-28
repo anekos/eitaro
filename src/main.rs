@@ -57,6 +57,8 @@ pub enum Command {
     /// Get word level (SVL)
     #[structopt(alias = "lv")]
     Level(command::level::Opt),
+    /// Like
+    Like(command::lookup::LikeOpt),
     /// Lookup
     Lookup(command::lookup::LookupOpt),
     /// Display the file paths using by eitaro
@@ -103,6 +105,8 @@ fn _main<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
                 command::lemmatize::lemmatize(opt, dictionary_path),
             Level(opt) =>
                 command::level::level(opt, dictionary_path),
+            Like(opt) =>
+                command::lookup::like(opt, dictionary_path),
             Lookup(opt) =>
                 command::lookup::lookup(opt, dictionary_path),
             Path =>

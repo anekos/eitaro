@@ -13,6 +13,7 @@ use regex::Regex;
 use serde_derive::{Serialize, Deserialize};
 
 use crate::correction::Corrector;
+use crate::db::model::{Definition as ModelDef};
 use crate::errors::{AppError, AppResult, AppResultU};
 use crate::str_utils::{fix_word, shorten, uncase};
 
@@ -200,6 +201,23 @@ impl Dictionary {
         lemmatize(&connection, word)
     }
 
+    pub fn like(&self, query: &str) -> AppResult<Option<Vec<Entry>>> {
+        let connection = self.connect_db()?;
+
+        let found: Vec<ModelDef> = diesel_query!(definitions, Definition [Q R T] {
+            d::definitions.
+                filter(d::term.like(query))
+                .order((d::term, d::id))
+                .load::<Definition>(&connection)?
+        });
+
+        if found.is_empty() {
+            return Ok(None)
+        }
+
+        Ok(Some(compact_definitions(found)?))
+    }
+
     pub fn search(&self, query: &str) -> AppResult<Option<Vec<Entry>>> {
         let connection = self.connect_db()?;
 
@@ -219,35 +237,7 @@ impl Dictionary {
                 .load::<Definition>(&connection)?
         });
 
-        if found.is_empty() {
-            return Ok(None)
-        }
-
-        let defs: serde_json::Result<Vec<(String, Definition)>> =
-            found.into_iter().map(|it| serde_json::from_str::<Definition>(&it.definition).map(|d| (it.term, d))).collect();
-        let defs = defs?;
-
-        let mut result = vec![];
-        let mut buffer = vec![];
-        let mut last_key = defs[0].0.clone();
-
-        for (key, def) in defs {
-            if key == last_key {
-                buffer.push(def);
-            } else {
-                let mut definitions = vec![def];
-                let mut key = key;
-                std::mem::swap(&mut buffer, &mut definitions);
-                std::mem::swap(&mut key, &mut last_key);
-                result.push(Entry { key, definitions });
-            }
-        }
-
-        if !buffer.is_empty() {
-            result.push(Entry { key: last_key, definitions: buffer });
-        }
-
-        Ok(Some(result))
+        Ok(Some(compact_definitions(found)?))
     }
 
     pub fn write<F>(&mut self, mut f: F) -> AppResult<Stat> where F: FnMut(&mut DictionaryWriter) -> AppResultU {
@@ -328,6 +318,34 @@ impl Dictionary {
     }
 }
 
+
+fn compact_definitions(defs: Vec<ModelDef>) -> AppResult<Vec<Entry>> {
+    let defs: serde_json::Result<Vec<(String, Definition)>> =
+        defs.into_iter().map(|it| serde_json::from_str::<Definition>(&it.definition).map(|d| (it.term, d))).collect();
+    let defs = defs?;
+
+    let mut result = vec![];
+    let mut buffer = vec![];
+    let mut last_key = defs[0].0.clone();
+
+    for (key, def) in defs {
+        if key == last_key {
+            buffer.push(def);
+        } else {
+            let mut definitions = vec![def];
+            let mut key = key;
+            std::mem::swap(&mut buffer, &mut definitions);
+            std::mem::swap(&mut key, &mut last_key);
+            result.push(Entry { key, definitions });
+        }
+    }
+
+    if !buffer.is_empty() {
+        result.push(Entry { key: last_key, definitions: buffer });
+    }
+
+    Ok(result)
+}
 
 fn lemmatize(connection: &SqliteConnection, word: &str) -> AppResult<String> {
     let mut lemmed = word.to_owned();

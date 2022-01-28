@@ -17,6 +17,19 @@ const DEFAULT_PROMPT: &str = "Eitaro> ";
 
 
 #[derive(Debug, StructOpt)]
+pub struct LikeOpt {
+    /// Word
+    word: String,
+    /// No Color
+    #[structopt(long="no-color", parse(from_flag = std::ops::Not::not))]
+    color: bool,
+    /// Take only n related entries
+    #[structopt(short, long)]
+    n: Option<usize>
+}
+
+
+#[derive(Debug, StructOpt)]
 pub struct LookupOpt {
     /// Word
     word: String,
@@ -39,9 +52,14 @@ pub struct ShellOpt {
 }
 
 
+pub fn like<T: AsRef<Path>>(opt: LikeOpt, dictionary_path: &T) -> AppResultU {
+    let mut dic = Dictionary::new(dictionary_path);
+    lookup_and_print(&mut dic, &opt.word, true, opt.color, opt.n, false, true)
+}
+
 pub fn lookup<T: AsRef<Path>>(opt: LookupOpt, dictionary_path: &T) -> AppResultU {
     let mut dic = Dictionary::new(dictionary_path);
-    lookup_and_print(&mut dic, &opt.word, opt.color, opt.n, opt.correction, true)
+    lookup_and_print(&mut dic, &opt.word, false, opt.color, opt.n, opt.correction, true)
 }
 
 pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
@@ -63,7 +81,7 @@ pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
                 if input.is_empty() {
                     continue;
                 }
-                lookup_and_print(&mut dic, input, true, None, true, true)?;
+                lookup_and_print(&mut dic, input, false, true, None, true, true)?;
                 let _ = append_history(input);
             },
             Err(rustyline::error::ReadlineError::Eof) => {
@@ -78,8 +96,10 @@ pub fn shell<T: AsRef<Path>>(opt: ShellOpt, dictionary_path: &T) -> AppResultU {
     Ok(())
 }
 
-fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option<usize>, correction: bool, pager: bool) -> AppResultU {
-    let mut found = if word.starts_with('/') {
+fn lookup_and_print(dic: &mut Dictionary, word: &str, like: bool, color: bool, limit: Option<usize>, correction: bool, pager: bool) -> AppResultU {
+    let mut found = if like {
+        dic.like(word.trim())
+    } else if word.starts_with('/') {
         dic.search(word[1..].trim())
     } else {
         dic.get_smart(word.trim())
@@ -100,7 +120,7 @@ fn lookup_and_print(dic: &mut Dictionary, word: &str, color: bool, limit: Option
 
     if correction {
         if let Some(found) = untypo(dic, word)? {
-            return lookup_and_print(dic, &found, color, limit, false, pager);
+            return lookup_and_print(dic, &found, like, color, limit, false, pager);
         }
     }
 
