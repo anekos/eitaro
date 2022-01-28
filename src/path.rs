@@ -8,9 +8,13 @@ use app_dirs::{app_dir, AppDataType, AppDirsError, AppInfo};
 const APP_INFO: AppInfo = AppInfo { name: "eitaro", author: "anekos" };
 
 
-pub fn get_dictionary_path() -> Result<PathBuf, AppDirsError> {
+pub fn get_dictionary_path(name: Option<&str>) -> Result<PathBuf, AppDirsError> {
     let mut result = app_dir(AppDataType::UserCache, &APP_INFO, "dictionary")?;
-    result.push("db.sqlite");
+    if let Some(name) = name {
+        result.push(format!("{}.sqlite", name));
+    } else {
+        result.push("db.sqlite");
+    }
     Ok(result)
 }
 

@@ -1,5 +1,5 @@
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 
 #[macro_use]
@@ -32,6 +32,9 @@ use crate::errors::{AppError, AppResultU};
 pub struct Opt {
     #[structopt(subcommand)]
     pub command: Option<Command>,
+    /// Dictionary name
+    #[structopt(short, long)]
+    pub dictionary: Option<String>
 }
 
 #[derive(StructOpt, Debug)]
@@ -78,50 +81,54 @@ pub enum Command {
 
 
 
-fn _main<T: AsRef<Path>>(dictionary_path: &T) -> AppResultU {
+fn _main() -> AppResultU {
     use self::Command::*;
 
     let opt = Opt::from_args();
 
+    let dict = opt.dictionary.as_ref().map(AsRef::as_ref);
+    let dictionary_path: PathBuf = path::get_dictionary_path(dict).expect("Failed to get dictionary path");
+
     if let Some(command) = opt.command {
+
         match command {
             Analyze(opt) =>
-                command::analyze::analyze(opt, dictionary_path),
+                command::analyze::analyze(opt, &dictionary_path),
             Build(opt) =>
-                command::builder::build_dictionary(opt, dictionary_path),
+                command::builder::build_dictionary(opt, &dictionary_path),
             Completions(opt) =>
                 command::completions::generate(opt, Opt::clap()),
             Database(opt) =>
-                command::database::shell(opt, dictionary_path),
+                command::database::shell(opt, &dictionary_path),
             Export(opt) =>
-                command::export::export(opt, dictionary_path),
+                command::export::export(opt, &dictionary_path),
             Html(opt) =>
-                command::html::lookup(opt, dictionary_path),
+                command::html::lookup(opt, &dictionary_path),
             Lemmas(opt) =>
-                command::lemmas::lemmas(opt, dictionary_path),
+                command::lemmas::lemmas(opt, &dictionary_path),
             Shell(opt) =>
-                command::lookup::shell(opt, dictionary_path),
+                command::lookup::shell(opt, &dictionary_path),
             Lemmatize(opt) =>
-                command::lemmatize::lemmatize(opt, dictionary_path),
+                command::lemmatize::lemmatize(opt, &dictionary_path),
             Level(opt) =>
-                command::level::level(opt, dictionary_path),
+                command::level::level(opt, &dictionary_path),
             Like(opt) =>
-                command::lookup::like(opt, dictionary_path),
+                command::lookup::like(opt, &dictionary_path),
             Lookup(opt) =>
-                command::lookup::lookup(opt, dictionary_path),
+                command::lookup::lookup(opt, &dictionary_path),
             Path =>
-                command::path::path(dictionary_path),
+                command::path::path(&dictionary_path),
             Server(opt) =>
-                command::http::start_server(opt, dictionary_path.as_ref().to_path_buf()),
+                command::http::start_server(opt, dictionary_path),
             Untypo(opt) =>
-                command::untypo::untypo(opt, dictionary_path),
+                command::untypo::untypo(opt, &dictionary_path),
             Wordle(opt) =>
-                command::wordle::play(opt, dictionary_path),
+                command::wordle::play(opt, &dictionary_path),
             Words(opt) =>
-                command::words::extract(opt, dictionary_path),
+                command::words::extract(opt, &dictionary_path),
         }
     } else if let Some(Command::Shell(opt)) = Opt::from_iter(&["", "shell"]).command {
-        command::lookup::shell(opt, dictionary_path)
+        command::lookup::shell(opt, &dictionary_path)
     } else {
         panic!("WTF: {:?}", Opt::from_iter(&["shell"]))
     }
@@ -133,10 +140,7 @@ fn main() {
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }
 
-
-    let dictionary_path = path::get_dictionary_path().expect("Failed to get dictionary path");
-
-    match _main(&dictionary_path) {
+    match _main() {
         Err(AppError::Void) | Ok(_) => (),
         Err(err) => {
             if let AppError::Diesel(_) = err {
