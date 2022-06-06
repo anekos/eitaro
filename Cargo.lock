@@ -781,7 +781,7 @@ dependencies = [
  "indexmap 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "json 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "kv 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy-init 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy-init 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.113 (registry+https://github.com/rust-lang/crates.io-index)",
  "lmdb 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1308,7 +1308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lazy-init"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -3046,7 +3046,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum kv 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b26c7e7ef194af62a9c7eb6bb9c29b6b94a35684d74064ea113480209098f48b"
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
-"checksum lazy-init 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e71f2233af239a915476da8ee21a57331d82b9880c78220451ece7cb5862d313"
+"checksum lazy-init 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "23517540be87a91d06324e6bf6286ba8214171123ee8862ae9a5e7d938d71815"
 "checksum lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "76f033c7ad61445c5b347c7382dd1237847eb1bce590fe50365dcb33d546be73"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 "checksum libc 0.2.113 (registry+https://github.com/rust-lang/crates.io-index)" = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
