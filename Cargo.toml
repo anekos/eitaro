@@ -49,7 +49,7 @@ unicase = "1.0.*"
 unicode-jp = "*"
 
 [dependencies.diesel]
-version = "1.0.0"
+version = "1.4.6"
 features = ["sqlite"]
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
